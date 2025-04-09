@@ -28,10 +28,62 @@ from google.genai import types
 from opentelemetry import trace
 
 from .agents.invocation_context import InvocationContext
+from .events.event import Event
 from .models.llm_request import LlmRequest
 from .models.llm_response import LlmResponse
 
+
 tracer = trace.get_tracer('gcp.vertex.agent')
+
+
+def trace_tool_call(
+    args: dict[str, Any],
+):
+  """Traces tool call.
+
+  Args:
+    args: The arguments to the tool call.
+  """
+  span = trace.get_current_span()
+  span.set_attribute('gen_ai.system', 'gcp.vertex.agent')
+  span.set_attribute('gcp.vertex.agent.tool_call_args', json.dumps(args))
+
+
+def trace_tool_response(
+    invocation_context: InvocationContext,
+    event_id: str,
+    function_response_event: Event,
+):
+  """Traces tool response event.
+
+  This function records details about the tool response event as attributes on
+  the current OpenTelemetry span.
+
+  Args:
+    invocation_context: The invocation context for the current agent run.
+    event_id: The ID of the event.
+    function_response_event: The function response event which can be either
+      merged function response for parallel function calls or individual
+      function response for sequential function calls.
+  """
+  span = trace.get_current_span()
+  span.set_attribute('gen_ai.system', 'gcp.vertex.agent')
+  span.set_attribute(
+      'gcp.vertex.agent.invocation_id', invocation_context.invocation_id
+  )
+  span.set_attribute('gcp.vertex.agent.event_id', event_id)
+  span.set_attribute(
+      'gcp.vertex.agent.tool_response',
+      function_response_event.model_dump_json(exclude_none=True),
+  )
+
+  # Setting empty llm request and response (as UI expect these) while not
+  # applicable for tool_response.
+  span.set_attribute('gcp.vertex.agent.llm_request', '{}')
+  span.set_attribute(
+      'gcp.vertex.agent.llm_response',
+      '{}',
+  )
 
 
 def trace_call_llm(

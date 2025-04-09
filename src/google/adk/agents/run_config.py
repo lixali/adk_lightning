@@ -52,6 +52,10 @@ class RunConfig(BaseModel):
   Whether to support CFC (Compositional Function Calling). Only applicable for
   StreamingMode.SSE. If it's true. the LIVE API will be invoked. Since only LIVE
   API supports CFC
+
+  .. warning::
+      This feature is **experimental** and its API or behavior may change
+      in future releases.
   """
 
   streaming_mode: StreamingMode = StreamingMode.NONE

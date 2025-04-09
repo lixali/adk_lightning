@@ -19,7 +19,6 @@ import logging
 import sys
 from typing import AsyncGenerator
 from typing import cast
-from typing import Generator
 from typing import TYPE_CHECKING
 
 from google.genai import Client

@@ -36,10 +36,8 @@ USER myuser
 ENV PATH="/home/myuser/.local/bin:$PATH"
 
 ENV GOOGLE_GENAI_USE_VERTEXAI=1
-# TODO: use passed-in value
 ENV GOOGLE_CLOUD_PROJECT={gcp_project_id}
 ENV GOOGLE_CLOUD_LOCATION={gcp_region}
-ENV ADK_TRACE_TO_CLOUD={with_cloud_trace}
 
 # Set up environment variables - End
 
@@ -56,7 +54,7 @@ COPY "agents/{app_name}/" "/app/agents/{app_name}/"
 
 EXPOSE {port}
 
-CMD adk {command} --port={port} "/app/agents"
+CMD adk {command} --port={port} {trace_to_cloud_option} "/app/agents"
 """
 
 
@@ -144,7 +142,7 @@ def to_cloud_run(
         port=port,
         command='web' if with_ui else 'api_server',
         install_agent_deps=install_agent_deps,
-        with_cloud_trace='1' if with_cloud_trace else '0',
+        trace_to_cloud_option='--trace_to_cloud' if with_cloud_trace else '',
     )
     dockerfile_path = os.path.join(temp_folder, 'Dockerfile')
     os.makedirs(temp_folder, exist_ok=True)

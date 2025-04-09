@@ -2,9 +2,19 @@
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
-<img src="assets/agent-development-kit.png" alt="Agent Development Kit Logo" width="150">
-
-**An open-source, code-first Python toolkit for building, evaluating, and deploying sophisticated AI agents with flexibility and control.**
+<html>
+    <h1 align="center">
+      <img src="assets/agent-development-kit.png" width="256"/>
+    </h1>
+    <h3 align="center">
+      An open-source, code-first Python toolkit for building, evaluating, and deploying sophisticated AI agents with flexibility and control.
+    </h3>
+    <h3 align="center">
+      Important Links:
+      <a href="https://google.github.io/adk-docs/">Docs</a> &
+      <a href="https://github.com/google/adk-samples">Samples</a>.
+    </h3>
+</html>
 
 The Agent Development Kit (ADK) is designed for developers seeking fine-grained control and flexibility when building advanced AI agents that are tightly integrated with services in Google Cloud. It allows you to define agent behavior, orchestration, and tool use directly in code, enabling robust debugging, versioning, and deployment anywhere – from your laptop to the cloud.
 
@@ -25,7 +35,7 @@ The Agent Development Kit (ADK) is designed for developers seeking fine-grained 
 
 ## 🚀 Installation
 
-You can install the Agent Developer Kit using `pip`:
+You can install the ADK using `pip`:
 
 ```bash
 pip install google-adk
@@ -42,7 +52,7 @@ from google.adk.tools import google_search
 
 root_agent = Agent(
     name="search_assistant",
-    model="gemini-1.5-flash-latest", # Or your preferred model like gemini-2.0-flash-001
+    model="gemini-2.0-flash-exp", # Or your preferred Gemini model
     instruction="You are a helpful assistant. Answer user questions using Google Search when needed.",
     description="An assistant that can search the web.",
     tools=[google_search]
@@ -68,19 +78,18 @@ Or launch the Web UI from the folder that contains `my_agent` folder:
 adk web
 ```
 
-For a full step-by-step guide, check out the quickstart or sample agents.
+For a full step-by-step guide, check out the [quickstart](https://google.github.io/adk-docs/get-started/quickstart/) or [sample agents](https://github.com/google/adk-samples).
 
 ## 📚 Resources
 
 Explore the full documentation for detailed guides on building, evaluating, and deploying agents:
 
-*   **[Get Started](get-started/introduction.md)**
-*   **[Build Agents](build/agents.md)**
-*   **[Browse Sample Agents](learn/sample_agents/)**
-*   **[Evaluate Agents](evaluate/evaluate-agents.md)**
-*   **[Deploy Agents](deploy/overview.md)**
-*   **[API Reference](guides/reference.md)**
-*   **[Troubleshooting](guides/troubleshooting.md)**
+*   **[Get Started](https://google.github.io/adk-docs/get-started/)**
+*   **[Browse Sample Agents](https://github.com/google/adk-samples)**
+*   **[Evaluate Agents](https://google.github.io/adk-docs/guides/evaluate-agents/)**
+*   **[Deploy Agents](https://google.github.io/adk-docs/deploy/)**
+*   **[API Reference](https://google.github.io/adk-docs/api-reference/)**
+*   **[Troubleshooting](https://google.github.io/adk-docs/guides/troubleshooting/)**
 
 ## 🤝 Contributing
 

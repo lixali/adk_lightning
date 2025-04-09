@@ -27,6 +27,7 @@ from ...events.event import Event
 from ...models.llm_request import LlmRequest
 from ._base_llm_processor import BaseLlmRequestProcessor
 from .functions import remove_client_function_call_id
+from .functions import REQUEST_EUC_FUNCTION_CALL_NAME
 
 
 class _ContentLlmRequestProcessor(BaseLlmRequestProcessor):
@@ -208,7 +209,9 @@ def _get_contents(
     if not _is_event_belongs_to_branch(current_branch, event):
       # Skip events not belong to current branch.
       continue
-
+    if _is_auth_event(event):
+      # skip auth event
+      continue
     filtered_events.append(
         _convert_foreign_event(event)
         if _is_other_agent_reply(agent_name, event)
@@ -368,3 +371,20 @@ def _is_event_belongs_to_branch(
   if not invocation_branch or not event.branch:
     return True
   return invocation_branch.startswith(event.branch)
+
+
+def _is_auth_event(event: Event) -> bool:
+  if not event.content.parts:
+    return False
+  for part in event.content.parts:
+    if (
+        part.function_call
+        and part.function_call.name == REQUEST_EUC_FUNCTION_CALL_NAME
+    ):
+      return True
+    if (
+        part.function_response
+        and part.function_response.name == REQUEST_EUC_FUNCTION_CALL_NAME
+    ):
+      return True
+  return False

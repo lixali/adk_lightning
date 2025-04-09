@@ -74,7 +74,7 @@ class BaseLlmFlow(ABC):
       return
 
     llm = self.__get_llm(invocation_context)
-    logger.info(
+    logger.debug(
         'Establishing live connection for agent: %s with llm request: %s',
         invocation_context.agent.name,
         llm_request,

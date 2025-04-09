@@ -124,6 +124,17 @@ class CodeExecutionUtils:
     if not content or not content.parts:
       return
 
+    # Extract the code from the executable code parts if there're no associated
+    # code execution result parts.
+    for idx, part in enumerate(content.parts):
+      if part.executable_code and (
+          idx == len(content.parts) - 1
+          or not content.parts[idx + 1].code_execution_result
+      ):
+        content.parts = content.parts[: idx + 1]
+        return part.executable_code.code
+
+    # Extract the code from the text parts.
     text_parts = [p for p in content.parts if p.text]
     if not text_parts:
       return

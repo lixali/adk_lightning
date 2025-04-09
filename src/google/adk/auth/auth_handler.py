@@ -89,7 +89,7 @@ class AuthHandler:
     client = OAuth2Session(
         auth_credential.oauth2.client_id,
         auth_credential.oauth2.client_secret,
-        scope=",".join(scopes),
+        scope=" ".join(scopes),
         redirect_uri=auth_credential.oauth2.redirect_uri,
         state=auth_credential.oauth2.state,
     )
@@ -250,6 +250,7 @@ class AuthHandler:
           or auth_scheme.flows.password
           and auth_scheme.flows.password.scopes
       )
+      scopes = list(scopes.keys())
 
     client = OAuth2Session(
         auth_credential.oauth2.client_id,
@@ -257,7 +258,9 @@ class AuthHandler:
         scope=" ".join(scopes),
         redirect_uri=auth_credential.oauth2.redirect_uri,
     )
-    uri, state = client.create_authorization_url(url=authorization_endpoint)
+    uri, state = client.create_authorization_url(
+        url=authorization_endpoint, access_type="offline", prompt="consent"
+    )
     exchanged_auth_credential = auth_credential.model_copy(deep=True)
     exchanged_auth_credential.oauth2.auth_uri = uri
     exchanged_auth_credential.oauth2.state = state

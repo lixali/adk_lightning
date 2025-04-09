@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import asyncio
+from contextlib import asynccontextmanager
 from datetime import datetime
 import logging
 import os
@@ -20,6 +21,7 @@ import tempfile
 from typing import Optional
 
 import click
+from fastapi import FastAPI
 import uvicorn
 
 from . import cli_deploy
@@ -98,7 +100,7 @@ def cli_run(agent: str, save_session: bool):
     default=False,
     help="Optional. Whether to print detailed results on console or not.",
 )
-def eval_command(
+def cli_eval(
     agent_module_file_path: str,
     eval_set_file_path: tuple[str],
     config_file_path: str,
@@ -230,6 +232,13 @@ def eval_command(
         " This is useful for local debugging."
     ),
 )
+@click.option(
+    "--trace_to_cloud",
+    is_flag=True,
+    show_default=True,
+    default=False,
+    help="Optional. Whether to enable cloud trace for telemetry.",
+)
 @click.argument(
     "agents_dir",
     type=click.Path(
@@ -237,15 +246,16 @@ def eval_command(
     ),
     default=os.getcwd(),
 )
-def web(
+def cli_web(
     agents_dir: str,
     log_to_tmp: bool,
     session_db_url: str = "",
     log_level: str = "INFO",
     allow_origins: Optional[list[str]] = None,
     port: int = 8000,
+    trace_to_cloud: bool = False,
 ):
-  """Start a FastAPI server with web UI for a certain agent.
+  """Start a FastAPI server with Web UI for agents.
 
   AGENTS_DIR: The directory of agents, where each sub-directory is a single
   agent, containing at least `__init__.py` and `agent.py` files.
@@ -261,17 +271,43 @@ def web(
 
   logging.getLogger().setLevel(log_level)
 
+  @asynccontextmanager
+  async def _lifespan(app: FastAPI):
+    click.secho(
+        f"""\
++-----------------------------------------------------------------------------+
+| ADK Web Server started                                                      |
+|                                                                             |
+| For local testing, access at http://localhost:{port}.{" "*(29 - len(str(port)))}|
++-----------------------------------------------------------------------------+
+""",
+        fg="green",
+    )
+    yield  # Startup is done, now app is running
+    click.secho(
+        """\
++-----------------------------------------------------------------------------+
+| ADK Web Server shutting down...                                             |
++-----------------------------------------------------------------------------+
+""",
+        fg="green",
+    )
+
+  app = get_fast_api_app(
+      agent_dir=agents_dir,
+      session_db_url=session_db_url,
+      allow_origins=allow_origins,
+      web=True,
+      trace_to_cloud=trace_to_cloud,
+      lifespan=_lifespan,
+  )
   config = uvicorn.Config(
-      get_fast_api_app(
-          agent_dir=agents_dir,
-          session_db_url=session_db_url,
-          allow_origins=allow_origins,
-          web=True,
-      ),
+      app,
       host="0.0.0.0",
       port=port,
       reload=True,
   )
+
   server = uvicorn.Server(config)
   server.run()
 
@@ -317,6 +353,13 @@ def web(
         " This is useful for local debugging."
     ),
 )
+@click.option(
+    "--trace_to_cloud",
+    is_flag=True,
+    show_default=True,
+    default=False,
+    help="Optional. Whether to enable cloud trace for telemetry.",
+)
 # The directory of agents, where each sub-directory is a single agent.
 # By default, it is the current working directory
 @click.argument(
@@ -333,8 +376,9 @@ def cli_api_server(
     log_level: str = "INFO",
     allow_origins: Optional[list[str]] = None,
     port: int = 8000,
+    trace_to_cloud: bool = False,
 ):
-  """Start an api server for a certain agent.
+  """Start a FastAPI server for agents.
 
   AGENTS_DIR: The directory of agents, where each sub-directory is a single
   agent, containing at least `__init__.py` and `agent.py` files.
@@ -356,6 +400,7 @@ def cli_api_server(
           session_db_url=session_db_url,
           allow_origins=allow_origins,
           web=False,
+          trace_to_cloud=trace_to_cloud,
       ),
       host="0.0.0.0",
       port=port,
@@ -444,7 +489,7 @@ def cli_api_server(
         exists=True, dir_okay=True, file_okay=False, resolve_path=True
     ),
 )
-def deploy_to_cloud_run(
+def cli_deploy_cloud_run(
     agent: str,
     project: Optional[str],
     region: Optional[str],
@@ -455,7 +500,7 @@ def deploy_to_cloud_run(
     with_cloud_trace: bool,
     with_ui: bool,
 ):
-  """Deploys agent to Cloud Run.
+  """Deploys an agent to Cloud Run.
 
   AGENT: The path to the agent source code folder.
 

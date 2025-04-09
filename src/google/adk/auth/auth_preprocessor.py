@@ -48,26 +48,28 @@ class _AuthLlmRequestProcessor(BaseLlmRequestProcessor):
     events = invocation_context.session.events
     if not events:
       return
-    request_euc_function_call_response_event = events[-1]
-    responses = (
-        request_euc_function_call_response_event.get_function_responses()
-    )
-    if not responses:
-      return
 
     request_euc_function_call_ids = set()
-
-    for function_call_response in responses:
-      if function_call_response.name != REQUEST_EUC_FUNCTION_CALL_NAME:
+    for k in range(len(events) - 1, -1, -1):
+      event = events[k]
+      # look for first event authored by user
+      if not event.author or event.author != 'user':
         continue
+      responses = event.get_function_responses()
+      if not responses:
+        return
 
-      # found the function call response for the system long running request euc
-      # function call
-      request_euc_function_call_ids.add(function_call_response.id)
-      auth_config = AuthConfig.model_validate(function_call_response.response)
-      AuthHandler(auth_config=auth_config).parse_and_store_auth_response(
-          state=invocation_context.session.state
-      )
+      for function_call_response in responses:
+        if function_call_response.name != REQUEST_EUC_FUNCTION_CALL_NAME:
+          continue
+        # found the function call response for the system long running request euc
+        # function call
+        request_euc_function_call_ids.add(function_call_response.id)
+        auth_config = AuthConfig.model_validate(function_call_response.response)
+        AuthHandler(auth_config=auth_config).parse_and_store_auth_response(
+            state=invocation_context.session.state
+        )
+      break
 
     if not request_euc_function_call_ids:
       return
@@ -89,6 +91,7 @@ class _AuthLlmRequestProcessor(BaseLlmRequestProcessor):
         tools_to_resume.add(args.function_call_id)
       if not tools_to_resume:
         continue
+
       # found the the system long running reqeust euc function call
       # looking for original function call that requests euc
       for j in range(i - 1, -1, -1):

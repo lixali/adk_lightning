@@ -168,14 +168,14 @@ async def run_cli(
     else:
       session_id = input('Session ID to save: ')
       session_path = f'{agent_module_path}/{session_id}.session.json'
+
+    # Fetch the session again to get all the details.
+    session = session_service.get_session(
+        app_name=session.app_name,
+        user_id=session.user_id,
+        session_id=session.id,
+    )
     with open(session_path, 'w') as f:
       f.write(session.model_dump_json(indent=2, exclude_none=True))
-    # TODO: Save from opentelemetry.
-    # logs_path = session_path.replace('.session.json', '.logs.json')
-    # with open(logs_path, 'w') as f:
-    #   f.write(
-    #       session.model_dump_json(
-    #           indent=2, exclude_none=True, include='event_logs'
-    #       )
-    #   )
+
     print('Session saved to', session_path)
