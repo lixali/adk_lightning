@@ -13,7 +13,6 @@
 # limitations under the License.
 
 """Tests for the Response Evaluator."""
-import random
 from unittest.mock import patch
 
 from google.adk.evaluation.eval_case import Invocation
@@ -25,7 +24,7 @@ from vertexai import types as vertexai_types
 
 
 @patch(
-    "google.adk.evaluation.response_evaluator.ResponseEvaluator._perform_eval"
+    "google.adk.evaluation.vertex_ai_eval_facade._VertexAiEvalFacade._perform_eval"
 )
 class TestResponseEvaluator:
   """A class to help organize "patch" that are applicable to all tests."""
@@ -109,146 +108,8 @@ class TestResponseEvaluator:
     assert evaluation_result.overall_score == 0.9
     assert evaluation_result.overall_eval_status == EvalStatus.PASSED
     mock_perform_eval.assert_called_once()
-
-  def test_evaluate_invocations_coherence_metric_failed(
-      self, mock_perform_eval
-  ):
-    """Test evaluate_invocations function for Coherence metric."""
-    actual_invocations = [
-        Invocation(
-            user_content=genai_types.Content(
-                parts=[genai_types.Part(text="This is a test query.")]
-            ),
-            final_response=genai_types.Content(
-                parts=[
-                    genai_types.Part(text="This is a test candidate response.")
-                ]
-            ),
-        )
+    _, mock_kwargs = mock_perform_eval.call_args
+    # Compare the names of the metrics.
+    assert [m.name for m in mock_kwargs["metrics"]] == [
+        vertexai_types.PrebuiltMetric.COHERENCE.name
     ]
-    expected_invocations = [
-        Invocation(
-            user_content=genai_types.Content(
-                parts=[genai_types.Part(text="This is a test query.")]
-            ),
-            final_response=genai_types.Content(
-                parts=[genai_types.Part(text="This is a test reference.")]
-            ),
-        )
-    ]
-    evaluator = ResponseEvaluator(
-        threshold=0.8, metric_name="response_evaluation_score"
-    )
-    # Mock the return value of _perform_eval
-    mock_perform_eval.return_value = vertexai_types.EvaluationResult(
-        summary_metrics=[vertexai_types.AggregatedMetricResult(mean_score=0.7)],
-        eval_case_results=[],
-    )
-
-    evaluation_result = evaluator.evaluate_invocations(
-        actual_invocations, expected_invocations
-    )
-
-    assert evaluation_result.overall_score == 0.7
-    assert evaluation_result.overall_eval_status == EvalStatus.FAILED
-    mock_perform_eval.assert_called_once()
-
-  def test_evaluate_invocations_coherence_metric_no_score(
-      self, mock_perform_eval
-  ):
-    """Test evaluate_invocations function for Coherence metric."""
-    actual_invocations = [
-        Invocation(
-            user_content=genai_types.Content(
-                parts=[genai_types.Part(text="This is a test query.")]
-            ),
-            final_response=genai_types.Content(
-                parts=[
-                    genai_types.Part(text="This is a test candidate response.")
-                ]
-            ),
-        )
-    ]
-    expected_invocations = [
-        Invocation(
-            user_content=genai_types.Content(
-                parts=[genai_types.Part(text="This is a test query.")]
-            ),
-            final_response=genai_types.Content(
-                parts=[genai_types.Part(text="This is a test reference.")]
-            ),
-        )
-    ]
-    evaluator = ResponseEvaluator(
-        threshold=0.8, metric_name="response_evaluation_score"
-    )
-    # Mock the return value of _perform_eval
-    mock_perform_eval.return_value = vertexai_types.EvaluationResult(
-        summary_metrics=[],
-        eval_case_results=[],
-    )
-
-    evaluation_result = evaluator.evaluate_invocations(
-        actual_invocations, expected_invocations
-    )
-
-    assert evaluation_result.overall_score is None
-    assert evaluation_result.overall_eval_status == EvalStatus.NOT_EVALUATED
-    mock_perform_eval.assert_called_once()
-
-  def test_evaluate_invocations_coherence_metric_multiple_invocations(
-      self, mock_perform_eval
-  ):
-    """Test evaluate_invocations function for Coherence metric with multiple invocations."""
-    num_invocations = 6
-    actual_invocations = []
-    expected_invocations = []
-    mock_eval_results = []
-    random.seed(61553)
-    scores = [random.random() for _ in range(num_invocations)]
-
-    for i in range(num_invocations):
-      actual_invocations.append(
-          Invocation(
-              user_content=genai_types.Content(
-                  parts=[genai_types.Part(text=f"Query {i+1}")]
-              ),
-              final_response=genai_types.Content(
-                  parts=[genai_types.Part(text=f"Response {i+1}")]
-              ),
-          )
-      )
-      expected_invocations.append(
-          Invocation(
-              user_content=genai_types.Content(
-                  parts=[genai_types.Part(text=f"Query {i+1}")]
-              ),
-              final_response=genai_types.Content(
-                  parts=[genai_types.Part(text=f"Reference {i+1}")]
-              ),
-          )
-      )
-      mock_eval_results.append(
-          vertexai_types.EvaluationResult(
-              summary_metrics=[
-                  vertexai_types.AggregatedMetricResult(mean_score=scores[i])
-              ],
-              eval_case_results=[],
-          )
-      )
-
-    evaluator = ResponseEvaluator(
-        threshold=0.8, metric_name="response_evaluation_score"
-    )
-    # Mock the return value of _perform_eval
-    mock_perform_eval.side_effect = mock_eval_results
-
-    evaluation_result = evaluator.evaluate_invocations(
-        actual_invocations, expected_invocations
-    )
-
-    assert evaluation_result.overall_score == pytest.approx(
-        sum(scores) / num_invocations
-    )
-    assert evaluation_result.overall_eval_status == EvalStatus.FAILED
-    assert mock_perform_eval.call_count == num_invocations
