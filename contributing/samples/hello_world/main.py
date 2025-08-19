@@ -14,90 +14,142 @@
 
 import asyncio
 import time
-
-import agent
-from dotenv import load_dotenv
+import logging
+import os
 from google.adk.agents.run_config import RunConfig
 from google.adk.cli.utils import logs
 from google.adk.runners import InMemoryRunner
 from google.adk.sessions.session import Session
 from google.genai import types
+from google.adk.models import GemmaModel  # Updated import
+from google.adk.agent import LlmAgent
+from google.adk.config import Config
 
-load_dotenv(override=True)
-logs.log_to_tmp_folder()
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+print("=" * 50)
+logger.info("Starting ADK Hello World Sample with Gemma 12B Model")
+print("=" * 50)
+
+# Initialize configuration
+config = Config()
+config.model = "gemma-12b"
 
 
 async def main():
-  app_name = 'my_app'
-  user_id_1 = 'user1'
-  runner = InMemoryRunner(
-      agent=agent.root_agent,
-      app_name=app_name,
-  )
-  session_11 = await runner.session_service.create_session(
-      app_name=app_name, user_id=user_id_1
-  )
-
-  async def run_prompt(session: Session, new_message: str):
-    content = types.Content(
-        role='user', parts=[types.Part.from_text(text=new_message)]
+    # Check environment
+    hf_token = os.getenv("HUGGING_FACE_TOKEN")
+    if not hf_token:
+        logger.error("HUGGING_FACE_TOKEN not found in environment!")
+        return
+    
+    logger.info("Environment checked - HUGGING_FACE_TOKEN found")
+    logger.info("Initializing Gemma 12B model...")
+    
+    # Initialize Gemma model and register it
+    try:
+        model = GemmaModel()
+        config.model_registry.register_model("gemma-12b", model)
+        logger.info(f"Gemma model loaded successfully on device: {model.device}")
+    except Exception as e:
+        logger.error(f"Failed to initialize Gemma model: {str(e)}")
+        return
+    
+    # Create agent with Gemma model
+    logger.info("Creating Gemma-powered agent...")
+    root_agent = LlmAgent(
+        name="GemmaAgent",
+        model="gemma-12b",  # Match the registered model name
+        instruction="""You are a helpful AI assistant powered by Gemma 12B. You can:
+        1. Roll dice and keep track of results
+        2. Respond to general questions
+        3. Process both text and byte inputs
+        Keep your responses clear and concise.""",
+        config=config
     )
-    print('** User says:', content.model_dump(exclude_none=True))
-    async for event in runner.run_async(
-        user_id=user_id_1,
-        session_id=session.id,
-        new_message=content,
-    ):
-      if event.content.parts and event.content.parts[0].text:
-        print(f'** {event.author}: {event.content.parts[0].text}')
+    logger.info("Gemma agent created with configuration")
 
-  async def run_prompt_bytes(session: Session, new_message: str):
-    content = types.Content(
-        role='user',
-        parts=[
-            types.Part.from_bytes(
-                data=str.encode(new_message), mime_type='text/plain'
-            )
-        ],
+    app_name = 'my_app'
+    user_id_1 = 'user1'
+    logger.info("Initializing runner with Gemma agent...")
+    runner = InMemoryRunner(
+        agent=root_agent,
+        app_name=app_name,
+        config=config  # Pass the config to the runner
     )
-    print('** User says:', content.model_dump(exclude_none=True))
-    async for event in runner.run_async(
-        user_id=user_id_1,
-        session_id=session.id,
-        new_message=content,
-        run_config=RunConfig(save_input_blobs_as_artifacts=True),
-    ):
-      if event.content.parts and event.content.parts[0].text:
-        print(f'** {event.author}: {event.content.parts[0].text}')
+    logger.info("Runner initialized with Gemma model!")
 
-  async def check_rolls_in_state(rolls_size: int):
-    session = await runner.session_service.get_session(
-        app_name=app_name, user_id=user_id_1, session_id=session_11.id
+    session_11 = await runner.session_service.create_session(
+        app_name=app_name, user_id=user_id_1
     )
-    assert len(session.state['rolls']) == rolls_size
-    for roll in session.state['rolls']:
-      assert roll > 0 and roll <= 100
 
-  start_time = time.time()
-  print('Start time:', start_time)
-  print('------------------------------------')
-  await run_prompt(session_11, 'Hi')
-  await run_prompt(session_11, 'Roll a die with 100 sides')
-  await check_rolls_in_state(1)
-  await run_prompt(session_11, 'Roll a die again with 100 sides.')
-  await check_rolls_in_state(2)
-  await run_prompt(session_11, 'What numbers did I got?')
-  await run_prompt_bytes(session_11, 'Hi bytes')
-  print(
-      await runner.artifact_service.list_artifact_keys(
-          app_name=app_name, user_id=user_id_1, session_id=session_11.id
-      )
-  )
-  end_time = time.time()
-  print('------------------------------------')
-  print('End time:', end_time)
-  print('Total time:', end_time - start_time)
+    async def run_prompt(session: Session, new_message: str):
+        content = types.Content(
+            role='user', parts=[types.Part.from_text(text=new_message)]
+        )
+        logger.info(f'User input: {new_message}')
+        logger.info('Using Gemma 12B model for generation...')
+        async for event in runner.run_async(
+            user_id=user_id_1,
+            session_id=session.id,
+            new_message=content,
+        ):
+            if event.content.parts and event.content.parts[0].text:
+                logger.info(f'Agent response: {event.content.parts[0].text}')
+
+    async def run_prompt_bytes(session: Session, new_message: str):
+        content = types.Content(
+            role='user',
+            parts=[
+                types.Part.from_bytes(
+                    data=str.encode(new_message), mime_type='text/plain'
+                )
+            ],
+        )
+        logger.info(f'User input (bytes): {new_message}')
+        async for event in runner.run_async(
+            user_id=user_id_1,
+            session_id=session.id,
+            new_message=content,
+            run_config=RunConfig(save_input_blobs_as_artifacts=True),
+        ):
+            if event.content.parts and event.content.parts[0].text:
+                logger.info(f'Agent response: {event.content.parts[0].text}')
+
+    async def check_rolls_in_state(rolls_size: int):
+        session = await runner.session_service.get_session(
+            app_name=app_name, user_id=user_id_1, session_id=session_11.id
+        )
+        assert len(session.state['rolls']) == rolls_size
+        for roll in session.state['rolls']:
+            assert roll > 0 and roll <= 100
+
+    start_time = time.time()
+    logger.info('Start time: %s', start_time)
+    logger.info('------------------------------------')
+    await run_prompt(session_11, 'Hi')
+    await run_prompt(session_11, 'Roll a die with 100 sides')
+    await check_rolls_in_state(1)
+    await run_prompt(session_11, 'Roll a die again with 100 sides.')
+    await check_rolls_in_state(2)
+    await run_prompt(session_11, 'What numbers did I got?')
+    await run_prompt_bytes(session_11, 'Hi bytes')
+    logger.info(
+        "Artifact keys: %s",
+        await runner.artifact_service.list_artifact_keys(
+            app_name=app_name, user_id=user_id_1, session_id=session_11.id
+        )
+    )
+    end_time = time.time()
+    logger.info('------------------------------------')
+    logger.info('End time: %s', end_time)
+    logger.info('Total time: %s seconds', end_time - start_time)
 
 
 if __name__ == '__main__':
-  asyncio.run(main())
+    asyncio.run(main())

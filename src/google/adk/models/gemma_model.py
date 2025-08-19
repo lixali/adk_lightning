@@ -2,8 +2,14 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
 from huggingface_hub import login
 import os
+from .base_llm import BaseLlm  # Add this import
 
-class GemmaModel:
+class GemmaModel(BaseLlm):  # Inherit from BaseLlm
+    @classmethod
+    def supported_models(cls) -> list[str]:
+        """Return list of model patterns supported by this class."""
+        return ["gemma-12b"]  # Only support 12B model
+
     def __init__(self):
         # Ensure you have HUGGING_FACE_TOKEN in environment
         hf_token = os.getenv("HUGGING_FACE_TOKEN")
@@ -13,11 +19,12 @@ class GemmaModel:
         # Login to Hugging Face
         login(token=hf_token)
         
+        # Only support 12B model
         self.model_name = "google/gemma-3-12b-it"
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        print(f"Loading Gemma model on {self.device}...")
+        print(f"Loading Gemma 12B model on {self.device}...")
         
-        # Initialize tokenizer and model with auth token
+        # Initialize tokenizer and model
         self.tokenizer = AutoTokenizer.from_pretrained(
             self.model_name,
             token=hf_token
@@ -28,7 +35,7 @@ class GemmaModel:
             device_map="auto",
             torch_dtype=torch.bfloat16
         )
-        print("Model loaded successfully!")
+        print(f"Model loaded successfully on {self.device}!")
         
     def generate(self, prompt, **kwargs):
         inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
@@ -45,7 +52,3 @@ class GemmaModel:
         print(f"Generated outputs: {outputs}")
         
         return self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-
-
-mygemma = GemmaModel()
-mygemma.generate("Write a Python function to calculate fibonacci sequence")  # Example usage

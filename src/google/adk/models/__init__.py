@@ -19,13 +19,24 @@ from .google_llm import Gemini
 from .llm_request import LlmRequest
 from .llm_response import LlmResponse
 from .registry import LLMRegistry
+from .gemma_model import GemmaModel
 
 __all__ = [
     'BaseLlm',
     'Gemini',
     'LLMRegistry',
+    'GemmaModel',
 ]
 
 
+# Add logging to see what's happening
+import logging
+logger = logging.getLogger(__name__)
+
 for regex in Gemini.supported_models():
-  LLMRegistry.register(Gemini)
+    logger.info(f"Registering Gemini model for pattern: {regex}")
+    LLMRegistry.register(Gemini)
+
+# Register Gemma model as well
+logger.info("Registering Gemma model")
+LLMRegistry.register(GemmaModel)
