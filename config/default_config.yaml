@@ -1,0 +1,9 @@
+model_config:
+  default_model: gemma-12b
+  model_settings:
+    gemma-12b:
+      max_tokens: 8192
+      temperature: 0.7
+      top_p: 0.95
+  available_models:
+    - gemma-12b
