@@ -2,39 +2,72 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
 from huggingface_hub import login
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 class GemmaModel():  # Inherit from BaseLlm
+    # Class-level cache to store the loaded model and tokenizer
+    _model_cache = {}
+    _tokenizer_cache = {}
+    _initialized_models = set()
+    _login_completed = False
+    
     @classmethod
     def supported_models(cls) -> list[str]:
         """Return list of model patterns supported by this class."""
         return ["gemma-12b"]  # Only support 12B model
 
     def __init__(self, model: str = "gemma-12b"):
+        # Only support 12B model
+        self.model_name = "google/gemma-3-12b-it"
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        
+        logger.info(f"GemmaModel.__init__ called for {self.model_name}")
+        
+        # Check if this model is already loaded in cache
+        if self.model_name in self._model_cache:
+            logger.info(f"✅ Using cached Gemma 12B model on {self.device} - avoiding reload!")
+            print(f"✅ Using cached Gemma 12B model on {self.device} - avoiding reload!")
+            self.model = self._model_cache[self.model_name]
+            self.tokenizer = self._tokenizer_cache[self.model_name]
+            return
+        
         # Ensure you have HUGGING_FACE_TOKEN in environment
         hf_token = os.getenv("HUGGING_FACE_TOKEN")
         if not hf_token:
             raise ValueError("Please set HUGGING_FACE_TOKEN environment variable")
             
-        # Login to Hugging Face
-        login(token=hf_token)
+        # Login to Hugging Face (only once)
+        if not self._login_completed:
+            logger.info("🔐 Performing HuggingFace login (one-time)")
+            login(token=hf_token)
+            self._login_completed = True
         
-        # Only support 12B model
-        self.model_name = "google/gemma-3-12b-it"
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        print(f"Loading Gemma 12B model on {self.device}...")
+        logger.info(f"🚀 Loading Gemma 12B model on {self.device} (first time load)...")
+        print(f"🚀 Loading Gemma 12B model on {self.device} (first time load)...")
         
         # Initialize tokenizer and model
+        logger.info("📝 Loading tokenizer...")
         self.tokenizer = AutoTokenizer.from_pretrained(
             self.model_name,
             token=hf_token
         )
+        
+        logger.info("🧠 Loading model weights...")
         self.model = AutoModelForCausalLM.from_pretrained(
             self.model_name,
             token=hf_token,
             device_map="auto",
             torch_dtype=torch.bfloat16
         )
-        print(f"Model loaded successfully on {self.device}!")
+        
+        # Cache the loaded model and tokenizer
+        self._model_cache[self.model_name] = self.model
+        self._tokenizer_cache[self.model_name] = self.tokenizer
+        
+        logger.info(f"✅ Model loaded successfully on {self.device} and cached for future use!")
+        print(f"✅ Model loaded successfully on {self.device} and cached for future use!")
         
     def generate(self, prompt, **kwargs):
         inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
@@ -68,6 +101,9 @@ class GemmaModel():  # Inherit from BaseLlm
         if response_text.startswith(prompt):
             response_text = response_text[len(prompt):].strip()
         
+        # Clean up any role prefixes that might appear in the response
+        response_text = self._clean_response_text(response_text)
+        
         # Create proper ADK response structure
         content = types.Content(
             role="model",
@@ -81,21 +117,48 @@ class GemmaModel():  # Inherit from BaseLlm
         """Build prompt from LlmRequest object."""
         prompt_parts = []
         
-        # Add system instruction if present
+        # Add system instruction if present (without "System:" prefix)
         if hasattr(llm_request, 'config') and llm_request.config and hasattr(llm_request.config, 'system_instruction'):
             if llm_request.config.system_instruction:
-                prompt_parts.append(f"System: {llm_request.config.system_instruction}")
+                prompt_parts.append(llm_request.config.system_instruction)
         
-        # Add conversation history
+        # Add conversation history (without role prefixes to avoid echoing)
         if hasattr(llm_request, 'contents') and llm_request.contents:
             for content in llm_request.contents:
-                role = content.role if hasattr(content, 'role') else 'user'
                 if hasattr(content, 'parts') and content.parts:
                     for part in content.parts:
                         if hasattr(part, 'text') and part.text:
-                            prompt_parts.append(f"{role.capitalize()}: {part.text}")
+                            # Only add the actual text without role prefixes
+                            prompt_parts.append(part.text)
         
         return "\n".join(prompt_parts) if prompt_parts else "Hello"
+    
+    def _clean_response_text(self, response_text):
+        """Clean up response text by removing unwanted prefixes and formatting."""
+        if not response_text:
+            return response_text
+        
+        # Remove common role prefixes that might appear at the start of responses
+        prefixes_to_remove = [
+            "Model: ",
+            "model: ",
+            "System: ",
+            "system: ",
+            "Assistant: ",
+            "assistant: ",
+            "AI: ",
+            "ai: "
+        ]
+        
+        for prefix in prefixes_to_remove:
+            if response_text.startswith(prefix):
+                response_text = response_text[len(prefix):].strip()
+                break
+        
+        # Remove any leading/trailing whitespace
+        response_text = response_text.strip()
+        
+        return response_text
 
 # mymodel = GemmaModel()
 # mymodel.generate("Hello, Gemma!")  # Example usage
