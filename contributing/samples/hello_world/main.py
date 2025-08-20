@@ -78,10 +78,7 @@ async def main():
     root_agent = LlmAgent(
         name="GemmaAgent",
         model="gemma-12b",  # Match the registered model name
-        instruction="""You are a helpful AI assistant powered by Gemma 12B. You can:
-        1. Roll dice and keep track of results
-        2. Respond to general questions
-        3. Process both text and byte inputs
+        instruction="""You are a helpful AI assistant powered by Gemma 12B.
         Keep your responses clear and concise."""
     )
     logger.info("Gemma agent created with configuration")
@@ -91,7 +88,8 @@ async def main():
     logger.info("Initializing runner with Gemma agent...")
     runner = InMemoryRunner(
         agent=root_agent,
-        app_name=app_name
+        app_name=app_name,
+        config=config  # Pass the config with registered model
     )
     logger.info("Runner initialized with Gemma model!")
 
@@ -99,7 +97,10 @@ async def main():
         app_name=app_name, user_id=user_id_1
     )
 
-    async def run_prompt(session: Session, new_message: str):
+    async def run_prompt(session: Session, new_message: str = None):
+        if new_message is None:
+            new_message = input("Enter your message: ")
+        
         content = types.Content(
             role='user', parts=[types.Part.from_text(text=new_message)]
         )
@@ -132,34 +133,21 @@ async def main():
             if event.content.parts and event.content.parts[0].text:
                 logger.info(f'Agent response: {event.content.parts[0].text}')
 
-    async def check_rolls_in_state(rolls_size: int):
-        session = await runner.session_service.get_session(
-            app_name=app_name, user_id=user_id_1, session_id=session_11.id
-        )
-        assert len(session.state['rolls']) == rolls_size
-        for roll in session.state['rolls']:
-            assert roll > 0 and roll <= 100
+    # Removed dice rolling functionality - focusing on conversation only
 
     start_time = time.time()
     logger.info('Start time: %s', start_time)
     logger.info('------------------------------------')
-    await run_prompt(session_11, 'Hi')
-    await run_prompt(session_11, 'Roll a die with 100 sides')
-    await check_rolls_in_state(1)
-    await run_prompt(session_11, 'Roll a die again with 100 sides.')
-    await check_rolls_in_state(2)
-    await run_prompt(session_11, 'What numbers did I got?')
-    await run_prompt_bytes(session_11, 'Hi bytes')
-    logger.info(
-        "Artifact keys: %s",
-        await runner.artifact_service.list_artifact_keys(
-            app_name=app_name, user_id=user_id_1, session_id=session_11.id
-        )
-    )
+    logger.info('Gemma 12B agent is ready for conversation!')
+    logger.info('Session created and waiting for real user input...')
+    
+    # Interactive conversation
+    await run_prompt(session_11)  # This will prompt user for input
+    
     end_time = time.time()
     logger.info('------------------------------------')
     logger.info('End time: %s', end_time)
-    logger.info('Total time: %s seconds', end_time - start_time)
+    logger.info('Setup time: %s seconds', end_time - start_time)
 
 
 if __name__ == '__main__':
