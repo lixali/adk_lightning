@@ -22,25 +22,16 @@
     </h3>
 </html>
 
-Agent Development Kit (ADK) is a flexible and modular framework for developing and deploying AI agents. While optimized for Gemini and the Google ecosystem, ADK is model-agnostic, deployment-agnostic, and is built for compatibility with other frameworks. ADK was designed to make agent development feel more like software development, to make it easier for developers to create, deploy, and orchestrate agentic architectures that range from simple tasks to complex workflows.
+This implementation now includes native **Gemma 3 12B model support** with model caching and efficient memory management. ADK was designed to make agent development feel more like software development, to make it easier for developers to create, deploy, and orchestrate agentic architectures that range from simple tasks to complex workflows.
 
 
 ---
 
 ## ✨ Key Features
 
-- **Rich Tool Ecosystem**: Utilize pre-built tools, custom functions,
-  OpenAPI specs, or integrate existing tools to give agents diverse
-  capabilities, all for tight integration with the Google ecosystem.
+- **Native Gemma 3 Model Integration**: Support for Gemma 3 12B model with 
+  intelligent caching, automatic model loading, and seamless ADK integration.
 
-- **Code-First Development**: Define agent logic, tools, and orchestration
-  directly in Python for ultimate flexibility, testability, and versioning.
-
-- **Modular Multi-Agent Systems**: Design scalable applications by composing
-  multiple specialized agents into flexible hierarchies.
-
-- **Deploy Anywhere**: Easily containerize and deploy agents on Cloud Run or
-  scale seamlessly with Vertex AI Agent Engine.
 
 ## 🤖 Agent2Agent (A2A) Protocol and ADK Integration
 
@@ -48,6 +39,10 @@ For remote agent-to-agent communication, ADK integrates with the
 [A2A protocol](https://github.com/google-a2a/A2A/).
 See this [example](https://github.com/a2aproject/a2a-samples/tree/main/samples/python/agents)
 for how they can work together.
+
+## 🔥 Gemma 3 Model Integration
+
+This implementation includes native support for **Google's Gemma 3 12B model** with several key optimizations:
 
 ## 🚀 Installation
 
@@ -59,18 +54,23 @@ You can install the latest stable version of ADK using `pip`:
 pip install google-adk
 ```
 
-The release cadence is weekly.
+### Additional Requirements for Gemma 3 Model
 
-This version is recommended for most users as it represents the most recent official release.
+To use the Gemma 3 12B model, you'll need:
 
-### Development Version
-Bug fixes and new features are merged into the main branch on GitHub first. If you need access to changes that haven't been included in an official PyPI release yet, you can install directly from the main branch:
+1. A HuggingFace account and token with access to the Gemma 3 model
+2. Set your HuggingFace token as an environment variable:
 
 ```bash
-pip install git+https://github.com/google/adk-python.git@main
+export HUGGING_FACE_TOKEN="your_huggingface_token_here"
 ```
 
-Note: The development version is built directly from the latest code commits. While it includes the newest fixes and features, it may also contain experimental changes or bugs not present in the stable release. Use it primarily for testing upcoming changes or accessing critical fixes before they are officially released.
+3. Install additional dependencies:
+
+```bash
+pip install transformers torch accelerate
+```
+
 
 ## 📚 Documentation
 
@@ -81,7 +81,22 @@ deploying agents:
 
 ## 🏁 Feature Highlight
 
-### Define a single agent:
+### Define a single agent with Gemma 3:
+
+```python
+from google.adk.agents import Agent
+from google.adk.tools import google_search
+
+root_agent = Agent(
+    name="search_assistant",
+    model="gemma-12b", # Native Gemma 3 12B model support
+    instruction="You are a helpful assistant. Answer user questions using Google Search when needed.",
+    description="An assistant that can search the web.",
+    tools=[google_search]
+)
+```
+
+### Define a single agent with Gemini:
 
 ```python
 from google.adk.agents import Agent
@@ -98,20 +113,20 @@ root_agent = Agent(
 
 ### Define a multi-agent system:
 
-Define a multi-agent system with coordinator agent, greeter agent, and task execution agent. Then ADK engine and the model will guide the agents works together to accomplish the task.
+Define a multi-agent system with coordinator agent, greeter agent, and task execution agent. You can mix Gemma 3 and Gemini models as needed. Then ADK engine and the model will guide the agents works together to accomplish the task.
 
 ```python
 from google.adk.agents import LlmAgent, BaseAgent
 
-# Define individual agents
-greeter = LlmAgent(name="greeter", model="gemini-2.0-flash", ...)
+# Define individual agents - mix of Gemma 3 and Gemini models
+greeter = LlmAgent(name="greeter", model="gemma-12b", ...)
 task_executor = LlmAgent(name="task_executor", model="gemini-2.0-flash", ...)
 
 # Create parent agent and assign children via sub_agents
 coordinator = LlmAgent(
     name="Coordinator",
-    model="gemini-2.0-flash",
-    description="I coordinate greetings and tasks.",
+    model="gemma-12b",  # Using Gemma 3 12B for coordination
+    description="I coordinate greetings and tasks using Gemma 3.",
     sub_agents=[ # Assign sub_agents here
         greeter,
         task_executor
@@ -121,27 +136,29 @@ coordinator = LlmAgent(
 
 ### Development UI
 
-A built-in development UI to help you test, evaluate, debug, and showcase your agent(s).
+A built-in development UI to help you test, evaluate, debug, and showcase your agent(s). Now supports both Gemma 3 and Gemini models.
 
 <img src="https://raw.githubusercontent.com/google/adk-python/main/assets/adk-web-dev-ui-function-call.png"/>
+
+### Run your Gemma 3 agent:
+
+```bash
+# Set your HuggingFace token first
+export HUGGING_FACE_TOKEN="your_token_here"
+
+# Run the hello world sample with Gemma 3
+python contributing/samples/hello_world/main.py
+```
 
 ###  Evaluate Agents
 
 ```bash
-adk eval \
-    samples_for_testing/hello_world \
-    samples_for_testing/hello_world/hello_world_eval_set_001.evalset.json
+adk web --host 0.0.0.0 contributing/samples
+
 ```
 
-## 🤝 Contributing
+And then open browser and type in http://0.0.0.0:8000/dev-ui/?app=hello_world to interact with the agent
 
-We welcome contributions from the community! Whether it's bug reports, feature requests, documentation improvements, or code contributions, please see our
-- [General contribution guideline and flow](https://google.github.io/adk-docs/contributing-guide/).
-- Then if you want to contribute code, please read [Code Contributing Guidelines](./CONTRIBUTING.md) to get started.
-
-## Vibe Coding
-
-If you are to develop agent via vibe coding the [llms.txt](./llms.txt) and the [llms-full.txt](./llms-full.txt) can be used as context to LLM. While the former one is a summarized one and the later one has the full information in case your LLM has big enough context window.
 
 ## 📄 License
 
