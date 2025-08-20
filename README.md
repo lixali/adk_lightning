@@ -96,59 +96,7 @@ root_agent = Agent(
 )
 ```
 
-### Define a single agent with Gemini:
 
-```python
-from google.adk.agents import Agent
-from google.adk.tools import google_search
-
-root_agent = Agent(
-    name="search_assistant",
-    model="gemini-2.0-flash", # Or your preferred Gemini model
-    instruction="You are a helpful assistant. Answer user questions using Google Search when needed.",
-    description="An assistant that can search the web.",
-    tools=[google_search]
-)
-```
-
-### Define a multi-agent system:
-
-Define a multi-agent system with coordinator agent, greeter agent, and task execution agent. You can mix Gemma 3 and Gemini models as needed. Then ADK engine and the model will guide the agents works together to accomplish the task.
-
-```python
-from google.adk.agents import LlmAgent, BaseAgent
-
-# Define individual agents - mix of Gemma 3 and Gemini models
-greeter = LlmAgent(name="greeter", model="gemma-12b", ...)
-task_executor = LlmAgent(name="task_executor", model="gemini-2.0-flash", ...)
-
-# Create parent agent and assign children via sub_agents
-coordinator = LlmAgent(
-    name="Coordinator",
-    model="gemma-12b",  # Using Gemma 3 12B for coordination
-    description="I coordinate greetings and tasks using Gemma 3.",
-    sub_agents=[ # Assign sub_agents here
-        greeter,
-        task_executor
-    ]
-)
-```
-
-### Development UI
-
-A built-in development UI to help you test, evaluate, debug, and showcase your agent(s). Now supports both Gemma 3 and Gemini models.
-
-<img src="https://raw.githubusercontent.com/google/adk-python/main/assets/adk-web-dev-ui-function-call.png"/>
-
-### Run your Gemma 3 agent:
-
-```bash
-# Set your HuggingFace token first
-export HUGGING_FACE_TOKEN="your_token_here"
-
-# Run the hello world sample with Gemma 3
-python contributing/samples/hello_world/main.py
-```
 
 ###  Evaluate Agents
 
@@ -157,7 +105,12 @@ adk web --host 0.0.0.0 contributing/samples
 
 ```
 
+<img src="https://raw.githubusercontent.com/google/adk-python/main/assets/gemma3_2.png"/>
+
+
 And then open browser and type in http://0.0.0.0:8000/dev-ui/?app=hello_world to interact with the agent
+
+<img src="https://raw.githubusercontent.com/google/adk-python/main/assets/gemma3_1.png"/>
 
 
 ## 📄 License
