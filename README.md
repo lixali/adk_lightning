@@ -39,8 +39,6 @@ This implementation includes native support for **Google's Gemma 3 12B model** w
 
 ## 🚀 Installation
 
-### Stable Release (Recommended)
-
 You can install the latest stable version of ADK using `pip`:
 
 ```bash
@@ -51,7 +49,7 @@ pip install google-adk
 
 To use the Gemma 3 12B model, you'll need:
 
-1. A HuggingFace account and token with access to the Gemma 3 model
+1. A HuggingFace account and token with access to the Gemma 3 model (request access in https://huggingface.co/google/gemma-3-12b-it )
 2. Set your HuggingFace token as an environment variable:
 
 ```bash
