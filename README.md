@@ -63,6 +63,7 @@ To use the Gemma 3 12B model, you'll need:
 
 ```bash
 export HUGGING_FACE_TOKEN="your_huggingface_token_here"
+export PYTHONPATH="/your_repo_path/src:$PYTHONPATH"
 ```
 
 3. Install additional dependencies:
@@ -71,13 +72,6 @@ export HUGGING_FACE_TOKEN="your_huggingface_token_here"
 pip install transformers torch accelerate
 ```
 
-
-## 📚 Documentation
-
-Explore the full documentation for detailed guides on building, evaluating, and
-deploying agents:
-
-* **[Documentation](https://google.github.io/adk-docs)**
 
 ## 🏁 Feature Highlight
 
@@ -92,7 +86,6 @@ root_agent = Agent(
     model="gemma-12b", # Native Gemma 3 12B model support
     instruction="You are a helpful assistant. Answer user questions using Google Search when needed.",
     description="An assistant that can search the web.",
-    tools=[google_search]
 )
 ```
 
