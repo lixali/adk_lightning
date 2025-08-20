@@ -16,29 +16,30 @@ import asyncio
 import time
 import logging
 import os
+import datetime
 from google.adk.agents.run_config import RunConfig
 from google.adk.cli.utils import logs
 from google.adk.runners import InMemoryRunner
 from google.adk.sessions.session import Session
 from google.genai import types
 from google.adk.models import GemmaModel  # Updated import
-from google.adk.agent import LlmAgent
-from google.adk.config import Config
+from google.adk.agents import LlmAgent
 
 # Configure logging
+log_filename = f"hello_world_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s'
+    format='%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s',
+    handlers=[
+        logging.StreamHandler(),  # Console output
+        logging.FileHandler(log_filename)  # File output
+    ]
 )
 logger = logging.getLogger(__name__)
 
 print("=" * 50)
 logger.info("Starting ADK Hello World Sample with Gemma 12B Model")
 print("=" * 50)
-
-# Initialize configuration
-config = Config()
-config.model = "gemma-12b"
 
 
 async def main():
@@ -50,6 +51,18 @@ async def main():
     
     logger.info("Environment checked - HUGGING_FACE_TOKEN found")
     logger.info("Initializing Gemma 12B model...")
+    
+    # Define a simple config object
+    class SimpleConfig:
+        def __init__(self):
+            self.model_registry = self
+            self.registered_models = {}
+        
+        def register_model(self, name, model):
+            self.registered_models[name] = model
+            logger.info(f"Registered model '{name}' in config")
+    
+    config = SimpleConfig()
     
     # Initialize Gemma model and register it
     try:
@@ -69,8 +82,7 @@ async def main():
         1. Roll dice and keep track of results
         2. Respond to general questions
         3. Process both text and byte inputs
-        Keep your responses clear and concise.""",
-        config=config
+        Keep your responses clear and concise."""
     )
     logger.info("Gemma agent created with configuration")
 
@@ -79,8 +91,7 @@ async def main():
     logger.info("Initializing runner with Gemma agent...")
     runner = InMemoryRunner(
         agent=root_agent,
-        app_name=app_name,
-        config=config  # Pass the config to the runner
+        app_name=app_name
     )
     logger.info("Runner initialized with Gemma model!")
 
