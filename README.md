@@ -105,12 +105,12 @@ adk web --host 0.0.0.0 contributing/samples
 
 ```
 
-<img src="https://raw.githubusercontent.com/google/adk-python/main/assets/gemma3_2.png"/>
+<img src="https://raw.githubusercontent.com/google/adk-lightning/main/assets/gemma3_2.png"/>
 
 
 And then open browser and type in http://0.0.0.0:8000/dev-ui/?app=hello_world to interact with the agent
 
-<img src="https://raw.githubusercontent.com/google/adk-python/main/assets/gemma3_1.png"/>
+<img src="https://raw.githubusercontent.com/google/adk-lightning/main/assets/gemma3_1.png"/>
 
 
 ## 📄 License
