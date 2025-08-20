@@ -73,10 +73,10 @@ from google.adk.agents import Agent
 from google.adk.tools import google_search
 
 root_agent = Agent(
-    name="search_assistant",
+    name="hello_world_agent",
     model="gemma-12b", # Native Gemma 3 12B model support
-    instruction="You are a helpful assistant. Answer user questions using Google Search when needed.",
-    description="An assistant that can search the web.",
+    instruction="You are a helpful assistant. Answer user questions and provide useful information",
+    description="Gemma3 agent",
 )
 ```
 
