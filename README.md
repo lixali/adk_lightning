@@ -33,13 +33,6 @@ This implementation now includes native **Gemma 3 12B model support** with model
   intelligent caching, automatic model loading, and seamless ADK integration.
 
 
-## 🤖 Agent2Agent (A2A) Protocol and ADK Integration
-
-For remote agent-to-agent communication, ADK integrates with the
-[A2A protocol](https://github.com/google-a2a/A2A/).
-See this [example](https://github.com/a2aproject/a2a-samples/tree/main/samples/python/agents)
-for how they can work together.
-
 ## 🔥 Gemma 3 Model Integration
 
 This implementation includes native support for **Google's Gemma 3 12B model** with several key optimizations:
