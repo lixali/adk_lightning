@@ -102,7 +102,7 @@ adk web --host 0.0.0.0 contributing/samples
 
 And then open browser and type in http://0.0.0.0:8000/dev-ui/?app=hello_world to interact with the agent
 
-<img src="https://raw.githubusercontent.com/google-dialogflow/adk-lightning/main/assets/gemma3_1.png"/>
+<img src="assets/gemma3_1.png"/>
 
 
 ## 📄 License
