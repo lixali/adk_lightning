@@ -162,6 +162,10 @@ def model_factory(
         from tau_bench.model_utils.model.anyscale import AnyscaleModel
 
         return AnyscaleModel(model=model_id, api_key=api_key, temperature=temperature)
+    elif platform == Platform.GOOGLE:
+        from tau_bench.model_utils.model.google import GoogleModel
+
+        return GoogleModel(model=model_id, api_key=api_key, temperature=temperature)
     elif platform == Platform.OUTLINES:
         if base_url is None:
             raise ValueError("base_url must be provided for custom models")
