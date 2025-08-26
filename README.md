@@ -129,6 +129,11 @@ gcloud ai models list --region=us-central1
 python run.py --agent-strategy tool-calling --env retail --model gemini-2.5-flash --model-provider vertex_ai --user-model gemini-2.5-flash --user-model-provider vertex_ai --user-strategy llm --max-concurrency 1
 ```
 
+### With Gemini-1.5-flash Agent + Gemini-2.5-flash User:
+```bash
+python run.py --agent-strategy tool-calling --env retail --model gemini-1.5-flash --model-provider vertex_ai --user-model gemini-2.5-flash --user-model-provider vertex_ai --user-strategy llm --max-concurrency 1
+```
+
 ### With Different Models:
 ```bash
 python run.py --agent-strategy tool-calling --env retail --model gemini-1.5-pro --model-provider vertex_ai --user-model gemini-2.5-flash --user-model-provider vertex_ai --user-strategy llm --max-concurrency 1
@@ -179,12 +184,12 @@ python analyze_results.py results/tool-calling-gemini-2.5-flash-0.0_range_0--1_u
 ### For Multi-Trial Analysis:
 Run with multiple trials to see Pass@k for k > 1:
 ```bash
-python run.py --agent-strategy tool-calling --env retail --model gemini-2.5-flash --model-provider vertex_ai --user-model gemini-2.5-flash --user-model-provider vertex_ai --user-strategy llm --max-concurrency 1 --num-trials 3
+python run.py --agent-strategy tool-calling --env retail --model gemini-1.5-flash --model-provider vertex_ai --user-model gemini-2.5-flash --user-model-provider vertex_ai --user-strategy llm --max-concurrency 1 --num-trials 3
 ```
 
 Then analyze:
 ```bash
-python analyze_results.py results/tool-calling-gemini-2.5-flash-0.0_range_0--3_user-gemini-2.5-flash-llm_TIMESTAMP.json
+python analyze_results.py results/tool-calling-gemini-1.5-flash-0.0_range_0--3_user-gemini-2.5-flash-llm_TIMESTAMP.json
 ```
 
 This will show Pass@1, Pass@2, and Pass@3 metrics.
