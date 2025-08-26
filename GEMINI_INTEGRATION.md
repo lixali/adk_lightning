@@ -71,4 +71,51 @@ python run.py --agent-strategy tool-calling --env retail --model gemini-2.5-flas
 4. `test_gemini_setup.py` - Setup verification script
 5. `test_providers.py` - Provider testing script
 
+## Analyzing Results
+
+After running benchmarks, you can analyze the results using the included analysis script:
+
+### Basic Analysis Command:
+```bash
+python analyze_results.py results/your-results-file.json
+```
+
+### Example with Your Gemini Results:
+```bash
+python analyze_results.py results/tool-calling-gemini-2.5-flash-0.0_range_0--1_user-gemini-2.5-flash-llm_0826161338.json
+```
+
+### Sample Output:
+```
+📊 Analyzing results from: results/tool-calling-gemini-2.5-flash-0.0_range_0--1_user-gemini-2.5-flash-llm_0826161338.json
+📝 Total entries: 115
+🔄 Number of trials: 1
+🏆 Average reward: 0.5043 (50.43% pass rate)
+📋 Unique tasks: 115
+
+📈 Pass@k Metrics:
+  Pass@1: 0.5043 (50.43%)
+
+📊 Additional Stats:
+  Tasks with at least 1 success: 58/115 (50.43%)
+```
+
+### For Multi-Trial Analysis:
+Run with multiple trials to see Pass@k for k > 1:
+```bash
+python run.py --agent-strategy tool-calling --env retail --model gemini-2.5-flash --model-provider vertex_ai --user-model gemini-2.5-flash --user-model-provider vertex_ai --user-strategy llm --max-concurrency 1 --num-trials 3
+```
+
+Then analyze:
+```bash
+python analyze_results.py results/tool-calling-gemini-2.5-flash-0.0_range_0--3_user-gemini-2.5-flash-llm_TIMESTAMP.json
+```
+
+This will show Pass@1, Pass@2, and Pass@3 metrics.
+
+### Understanding the Metrics:
+- **Average Reward**: Overall success rate (0.0-1.0, where 1.0 = 100% success)
+- **Pass@k**: Success rate when allowed k attempts per task
+- **Current Gemini Performance**: 50.43% pass rate on retail customer service tasks
+
 The integration is now complete and working exactly as requested! 🎉
