@@ -23,6 +23,25 @@ class ToolCallingAgent(Agent):
         self.model = model
         self.provider = provider
         self.temperature = temperature
+        
+        # Handle custom providers by mapping them to litellm providers
+        if provider == "gemma":
+            # Auto-detect the appropriate litellm provider based on model name
+            if model.startswith("gemma:") or ":" in model:
+                self.litellm_provider = "ollama"
+                self.litellm_model = model  # Keep the model as is for Ollama
+            elif model.startswith("vllm/") or model.startswith("/"):
+                # vLLM deployment (local path or vllm/ prefix)
+                self.litellm_provider = "vllm"  
+                self.litellm_model = model.replace("vllm/", "") if model.startswith("vllm/") else model
+            else:
+                # Assume HuggingFace format
+                self.litellm_provider = "huggingface"
+                self.litellm_model = f"google/{model}" if not model.startswith("google/") else model
+        else:
+            # Use provider and model as-is for standard litellm providers
+            self.litellm_provider = provider
+            self.litellm_model = model
 
     def solve(
         self, env: Env, task_index: Optional[int] = None, max_num_steps: int = 30
@@ -39,8 +58,8 @@ class ToolCallingAgent(Agent):
         for _ in range(max_num_steps):
             res = completion(
                 messages=messages,
-                model=self.model,
-                custom_llm_provider=self.provider,
+                model=self.litellm_model,
+                custom_llm_provider=self.litellm_provider,
                 tools=self.tools_info,
                 temperature=self.temperature,
             )

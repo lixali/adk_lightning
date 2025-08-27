@@ -205,3 +205,94 @@ The integration is now complete and working exactly as requested! 🎉
 
 ## Previous Documentation
 For the original tau-bench documentation, see [README_old.md](README_old.md).
+
+## 🆕 Gemma Model Support
+
+### New Platform Added: GEMMA
+
+We've added comprehensive support for Google's Gemma models as agent models, with flexibility for both hosted and custom fine-tuned deployments:
+
+```bash
+# Using Gemma 9B via HuggingFace (hosted)
+python run.py --agent-strategy tool-calling --env retail \
+  --model gemma-2-9b-it --model-provider gemma \
+  --user-model gemini-2.5-flash --user-model-provider vertex_ai \
+  --user-strategy llm --max-concurrency 1
+
+# Using Gemma 7B via Ollama (local)
+python run.py --agent-strategy tool-calling --env retail \
+  --model gemma:7b --model-provider gemma \
+  --user-model gemini-2.5-flash --user-model-provider vertex_ai \
+  --user-strategy llm --max-concurrency 1
+```
+
+### Supported Gemma Models
+- **gemma-2-27b-it**: Most capable, highest quality
+- **gemma-2-9b-it**: Good balance of capability and speed  
+- **gemma-2-2b-it**: Fastest, smallest model
+- **gemma-7b-it**: Legacy model, good for compatibility
+
+### Deployment Options
+
+#### 1. HuggingFace (Hosted)
+```bash
+export HUGGINGFACE_API_KEY=your_hf_token_here
+python run.py --agent-strategy tool-calling --env retail \
+  --model gemma-2-9b-it --model-provider gemma \
+  --user-model gemini-2.5-flash --user-model-provider vertex_ai \
+  --user-strategy llm --max-concurrency 1
+```
+
+#### 2. Ollama (Local)
+```bash
+# Install and pull model
+ollama pull gemma:7b
+
+# Run benchmark
+python run.py --agent-strategy tool-calling --env retail \
+  --model gemma:7b --model-provider gemma \
+  --user-model gemini-2.5-flash --user-model-provider vertex_ai \
+  --user-strategy llm --max-concurrency 1
+```
+
+#### 3. vLLM (Multi-GPU)
+```bash
+# Start vLLM server
+vllm serve google/gemma-2-9b-it --host 0.0.0.0 --port 8000
+
+# Run benchmark
+python run.py --agent-strategy tool-calling --env retail \
+  --model gemma-2-9b-it --model-provider gemma --base-url http://localhost:8000/v1 \
+  --user-model gemini-2.5-flash --user-model-provider vertex_ai \
+  --user-strategy llm --max-concurrency 1
+```
+
+#### 4. Custom Fine-tuned Model (Future)
+```bash
+# For your future fine-tuned models
+python run.py --agent-strategy tool-calling --env retail \
+  --model /path/to/your/fine-tuned-gemma --model-provider gemma --base-url http://your-server:8000/v1 \
+  --user-model gemini-2.5-flash --user-model-provider vertex_ai \
+  --user-strategy llm --max-concurrency 1
+```
+
+### Testing Available Models
+Use the provided test script to check what's available in your environment:
+
+```bash
+python test_gemma_integration.py
+```
+
+This will test:
+- HuggingFace API access
+- Local Ollama models  
+- Integration functionality
+- Generate usage examples
+
+### Implementation Features
+- ✅ **Multi-provider support**: HuggingFace, Ollama, vLLM, custom endpoints
+- ✅ **Future-ready**: Easy switching to fine-tuned models via model path/URL
+- ✅ **Cost tracking**: Accurate pricing for different model sizes
+- ✅ **Context handling**: Proper context length limits for each model
+- ✅ **Error handling**: Graceful fallbacks and clear error messages
+- ✅ **Flexible deployment**: Works with local, hosted, and custom setups

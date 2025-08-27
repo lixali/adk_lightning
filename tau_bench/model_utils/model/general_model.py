@@ -166,6 +166,23 @@ def model_factory(
         from tau_bench.model_utils.model.google import GoogleModel
 
         return GoogleModel(model=model_id, api_key=api_key, temperature=temperature)
+    elif platform == Platform.GEMMA:
+        from tau_bench.model_utils.model.gemma import GemmaModel
+
+        # Auto-detect provider based on model_id patterns
+        provider = "huggingface"  # default
+        if model_id.startswith("gemma:") or ":" in model_id:
+            provider = "ollama"
+        elif base_url:
+            provider = "custom"
+            
+        return GemmaModel(
+            model=model_id, 
+            provider=provider,
+            api_key=api_key, 
+            temperature=temperature, 
+            base_url=base_url
+        )
     elif platform == Platform.OUTLINES:
         if base_url is None:
             raise ValueError("base_url must be provided for custom models")

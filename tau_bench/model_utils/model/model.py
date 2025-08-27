@@ -24,6 +24,7 @@ class Platform(enum.Enum):
     ANTHROPIC = "anthropic"
     ANYSCALE = "anyscale"
     GOOGLE = "google"
+    GEMMA = "gemma"
     OUTLINES = "outlines"
     VLLM_CHAT = "vllm-chat"
     VLLM_COMPLETION = "vllm-completion"

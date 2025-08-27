@@ -18,9 +18,13 @@ from tau_bench.envs.user import UserStrategy
 
 
 def run(config: RunConfig) -> List[EnvRunResult]:
+    # Add our custom providers to the litellm provider list
+    custom_providers = ["gemma", "google"]  # Our custom providers
+    all_providers = list(provider_list) + custom_providers
+    
     assert config.env in ["retail", "airline"], "Only retail and airline envs are supported"
-    assert config.model_provider in provider_list, "Invalid model provider"
-    assert config.user_model_provider in provider_list, "Invalid user model provider"
+    assert config.model_provider in all_providers, "Invalid model provider"
+    assert config.user_model_provider in all_providers, "Invalid user model provider"
     assert config.agent_strategy in ["tool-calling", "act", "react", "few-shot"], "Invalid agent strategy"
     assert config.task_split in ["train", "test", "dev"], "Invalid task split"
     assert config.user_strategy in [item.value for item in UserStrategy], "Invalid user strategy"

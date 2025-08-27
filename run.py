@@ -18,10 +18,14 @@ def parse_args() -> RunConfig:
         type=str,
         help="The model to use for the agent",
     )
+    # Add our custom providers to the litellm provider list
+    custom_providers = ["gemma", "google"]  # Our custom providers
+    all_providers = list(provider_list) + custom_providers
+    
     parser.add_argument(
         "--model-provider",
         type=str,
-        choices=provider_list,
+        choices=all_providers,
         help="The model provider for the agent",
     )
     parser.add_argument(
@@ -33,7 +37,7 @@ def parse_args() -> RunConfig:
     parser.add_argument(
         "--user-model-provider",
         type=str,
-        choices=provider_list,
+        choices=all_providers,
         help="The model provider for the user simulator",
     )
     parser.add_argument(
