@@ -212,25 +212,15 @@ For the original tau-bench documentation, see [README_old.md](README_old.md).
 
 We've added comprehensive support for Google's Gemma models as agent models, with flexibility for both hosted and custom fine-tuned deployments:
 
+### Recommended Command (Gemma 12B + Gemini User):
 ```bash
-# Using Gemma 9B via HuggingFace (hosted)
 python run.py --agent-strategy tool-calling --env retail \
-  --model gemma-2-9b-it --model-provider gemma \
+  --model gemma3:12b --model-provider gemma \
   --user-model gemini-2.5-flash --user-model-provider vertex_ai \
-  --user-strategy llm --max-concurrency 1
-
-# Using Gemma 7B via Ollama (local)
-python run.py --agent-strategy tool-calling --env retail \
-  --model gemma:7b --model-provider gemma \
-  --user-model gemini-2.5-flash --user-model-provider vertex_ai \
-  --user-strategy llm --max-concurrency 1
+  --user-strategy llm --max-concurrency 3 --end-index 115
 ```
 
-### Supported Gemma Models
-- **gemma-2-27b-it**: Most capable, highest quality
-- **gemma-2-9b-it**: Good balance of capability and speed  
-- **gemma-2-2b-it**: Fastest, smallest model
-- **gemma-7b-it**: Legacy model, good for compatibility
+
 
 ### Deployment Options
 
@@ -245,14 +235,21 @@ python run.py --agent-strategy tool-calling --env retail \
 
 #### 2. Ollama (Local)
 ```bash
-# Install and pull model
+# Install and pull models
 ollama pull gemma:7b
+ollama pull gemma3:12b
 
-# Run benchmark
+# Run benchmark with Gemma 7B
 python run.py --agent-strategy tool-calling --env retail \
   --model gemma:7b --model-provider gemma \
   --user-model gemini-2.5-flash --user-model-provider vertex_ai \
-  --user-strategy llm --max-concurrency 1
+  --user-strategy llm --max-concurrency 3 --end-index 115
+
+# Run benchmark with Gemma3 12B (latest, higher capability)
+python run.py --agent-strategy tool-calling --env retail \
+  --model gemma3:12b --model-provider gemma \
+  --user-model gemini-2.5-flash --user-model-provider vertex_ai \
+  --user-strategy llm --max-concurrency 3 --end-index 115
 ```
 
 #### 3. vLLM (Multi-GPU)
@@ -293,6 +290,7 @@ This will test:
 - ✅ **Multi-provider support**: HuggingFace, Ollama, vLLM, custom endpoints
 - ✅ **Future-ready**: Easy switching to fine-tuned models via model path/URL
 - ✅ **Cost tracking**: Accurate pricing for different model sizes
-- ✅ **Context handling**: Proper context length limits for each model
+- ✅ **Context handling**: Proper context length limits for each model (gemma3:12b supports 128k context)
 - ✅ **Error handling**: Graceful fallbacks and clear error messages
 - ✅ **Flexible deployment**: Works with local, hosted, and custom setups
+- ✅ **Latest models**: Includes Gemma3 12B with enhanced performance

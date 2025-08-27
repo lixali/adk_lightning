@@ -11,16 +11,20 @@ HUGGINGFACE_API_KEY_ENV_VAR = "HUGGINGFACE_API_KEY"
 
 # Pricing estimates for different Gemma models (rough estimates)
 PRICE_PER_INPUT_TOKEN_MAP = {
+    "gemma3:12b": 0.3 / 1000000,        # Estimate for Gemma3 12B
     "gemma-2-27b-it": 0.5 / 1000000,    # Estimate for large model
     "gemma-2-9b-it": 0.2 / 1000000,     # Estimate for medium model
     "gemma-2-2b-it": 0.05 / 1000000,    # Estimate for small model
+    "gemma:7b": 0.15 / 1000000,         # Original Gemma 7B
     "gemma-7b-it": 0.15 / 1000000,      # Legacy Gemma model
 }
 
 PRICE_PER_OUTPUT_TOKEN_MAP = {
+    "gemma3:12b": 0.9 / 1000000,        # Estimate for Gemma3 12B
     "gemma-2-27b-it": 1.5 / 1000000,
     "gemma-2-9b-it": 0.6 / 1000000,
     "gemma-2-2b-it": 0.15 / 1000000,
+    "gemma:7b": 0.45 / 1000000,         # Original Gemma 7B
     "gemma-7b-it": 0.45 / 1000000,
 }
 
@@ -28,27 +32,33 @@ INPUT_PRICE_PER_TOKEN_FALLBACK = 0.2 / 1000000
 OUTPUT_PRICE_PER_TOKEN_FALLBACK = 0.6 / 1000000
 
 CAPABILITY_SCORE_MAP = {
-    "gemma-2-27b-it": 0.85,    # High capability for 27B model
-    "gemma-2-9b-it": 0.75,     # Good capability for 9B model  
-    "gemma-2-2b-it": 0.65,     # Decent capability for 2B model
-    "gemma-7b-it": 0.70,       # Legacy model capability
+    "gemma3:12b": 0.88,         # High capability for Gemma3 12B
+    "gemma-2-27b-it": 0.85,     # High capability for 27B model
+    "gemma-2-9b-it": 0.75,      # Good capability for 9B model  
+    "gemma-2-2b-it": 0.65,      # Decent capability for 2B model
+    "gemma:7b": 0.70,           # Original Gemma 7B capability
+    "gemma-7b-it": 0.70,        # Legacy model capability
 }
 
 CAPABILITY_SCORE_FALLBACK = 0.75
 
 LATENCY_MS_PER_OUTPUT_TOKEN_MAP = {
-    "gemma-2-27b-it": 100.0,   # Slower for large model
-    "gemma-2-9b-it": 60.0,     # Medium speed
-    "gemma-2-2b-it": 30.0,     # Faster for small model
-    "gemma-7b-it": 50.0,       # Legacy model speed
+    "gemma3:12b": 35.0,         # Estimated latency for Gemma3 12B
+    "gemma-2-27b-it": 45.0,     # Higher latency for 27B model
+    "gemma-2-9b-it": 20.0,      # Moderate latency for 9B model
+    "gemma-2-2b-it": 10.0,      # Lower latency for 2B model
+    "gemma:7b": 25.0,           # Original Gemma 7B latency
+    "gemma-7b-it": 25.0,        # Legacy model latency
 }
 LATENCY_MS_PER_OUTPUT_TOKEN_FALLBACK = 60.0
 
 MAX_CONTEXT_LENGTH_MAP = {
-    "gemma-2-27b-it": 8192,    # Gemma 2 context length
-    "gemma-2-9b-it": 8192,
-    "gemma-2-2b-it": 8192,
-    "gemma-7b-it": 8192,       # Legacy Gemma context length
+    "gemma3:12b": 131072,       # 128k context for Gemma3 12B
+    "gemma-2-27b-it": 8192,     # 8k context for 27B model
+    "gemma-2-9b-it": 8192,      # 8k context for 9B model  
+    "gemma-2-2b-it": 8192,      # 8k context for 2B model
+    "gemma:7b": 8192,           # 8k context for original Gemma 7B
+    "gemma-7b-it": 8192,        # 8k context for legacy model
 }
 
 MAX_CONTEXT_LENGTH_FALLBACK = 8192

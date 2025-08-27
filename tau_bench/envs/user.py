@@ -7,6 +7,22 @@ from litellm import completion
 from typing import Optional, List, Dict, Any, Union
 
 
+def map_provider_to_litellm(provider: str, model: str) -> str:
+    """Map custom provider names to litellm provider names"""
+    if provider == "google":
+        return "vertex_ai"
+    elif provider == "gemma":
+        # Smart provider mapping for gemma models
+        if "gemma:7b" in model or "gemma3:12b" in model:
+            return "ollama"
+        elif "vllm/" in model:
+            return "vllm" 
+        else:
+            return "huggingface"
+    else:
+        return provider
+
+
 class BaseUserSimulationEnv(abc.ABC):
     metadata = {}
 
@@ -44,8 +60,9 @@ class LLMUserSimulationEnv(BaseUserSimulationEnv):
         self.reset()
 
     def generate_next_message(self, messages: List[Dict[str, Any]]) -> str:
+        mapped_provider = map_provider_to_litellm(self.provider, self.model)
         res = completion(
-            model=self.model, custom_llm_provider=self.provider, messages=messages
+            model=self.model, custom_llm_provider=mapped_provider, messages=messages
         )
         message = res.choices[0].message
         self.messages.append(message.model_dump())
@@ -115,8 +132,9 @@ User Response:
 <the user response (this will be parsed and sent to the agent)>"""
 
     def generate_next_message(self, messages: List[Dict[str, Any]]) -> str:
+        mapped_provider = map_provider_to_litellm(self.provider, self.model)
         res = completion(
-            model=self.model, custom_llm_provider=self.provider, messages=messages
+            model=self.model, custom_llm_provider=mapped_provider, messages=messages
         )
         message = res.choices[0].message
         self.messages.append(message.model_dump())
@@ -164,8 +182,9 @@ class VerifyUserSimulationEnv(LLMUserSimulationEnv):
         attempts = 0
         cur_message = None
         while attempts < self.max_attempts:
+            mapped_provider = map_provider_to_litellm(self.provider, self.model)
             res = completion(
-                model=self.model, custom_llm_provider=self.provider, messages=messages
+                model=self.model, custom_llm_provider=mapped_provider, messages=messages
             )
             cur_message = res.choices[0].message
             self.total_cost = res._hidden_params["response_cost"]
@@ -226,7 +245,7 @@ Your answer will be parsed, so do not include any other text than the classifica
 Classification:"""
     res = completion(
         model=model,
-        custom_llm_provider=provider,
+        custom_llm_provider=map_provider_to_litellm(provider, model),
         messages=[{"role": "user", "content": prompt}],
     )
     return "true" in res.choices[0].message.content.lower()
@@ -260,7 +279,7 @@ Response:
 <the response (this will be parsed and sent to the agent)>"""
     res = completion(
         model=model,
-        custom_llm_provider=provider,
+        custom_llm_provider=map_provider_to_litellm(provider, model),
         messages=[{"role": "user", "content": prompt}],
     )
     _, response = res.choices[0].message.content.split("Response:")
