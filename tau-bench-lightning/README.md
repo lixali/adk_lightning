@@ -2,7 +2,7 @@
 
 ## ✅ Integration Complete!
 
-The Gemini-2.5-flash model has been successfully integrated into the tau-bench codebase. You can now run the exact command you requested:
+The Gemini-2.5-flash and Gemma3 model has been successfully integrated into the tau-bench codebase. You can now run the exact command you requested:
 
 ```bash
 python run.py --agent-strategy tool-calling --env retail --model gemini-2.5-flash --model-provider vertex_ai --user-model gemini-2.5-flash --user-model-provider vertex_ai --user-strategy llm --max-concurrency 1
