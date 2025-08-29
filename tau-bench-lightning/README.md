@@ -28,11 +28,6 @@ python run.py --agent-strategy tool-calling --env retail --model gemini-2.5-flas
 - ✅ Supports `gemini` provider (requires GOOGLE_API_KEY)
 - ✅ Tool calling functionality verified and working
 
-### 4. Authentication
-- ✅ Works with default Google Cloud credentials (current setup)
-- ✅ Supports GOOGLE_API_KEY environment variable
-- ✅ Supports GOOGLE_APPLICATION_CREDENTIALS service account
-
 ## Authentication Setup
 
 ### How Authentication Works
@@ -54,7 +49,7 @@ gcloud services list --enabled --filter="name:aiplatform.googleapis.com"
 
 ### Authentication Options
 
-#### Option 1: User Account (Recommended for Development)
+#### Option 1: User Account
 ```bash
 # Login with your Google account
 gcloud auth login
@@ -196,8 +191,7 @@ This will show Pass@1, Pass@2, and Pass@3 metrics.
 
 ### Understanding the Metrics:
 - **Average Reward**: Overall success rate (0.0-1.0, where 1.0 = 100% success)
-- **Pass@k**: Success rate when allowed k attempts per task
-- **Current Gemini Performance**: 50.43% pass rate on retail customer service tasks
+- **Pass^k**: Success rate of all K attempts pass
 
 The integration is now complete and working exactly as requested! 🎉
 
@@ -289,8 +283,6 @@ This will test:
 ### Implementation Features
 - ✅ **Multi-provider support**: HuggingFace, Ollama, vLLM, custom endpoints
 - ✅ **Future-ready**: Easy switching to fine-tuned models via model path/URL
-- ✅ **Cost tracking**: Accurate pricing for different model sizes
-- ✅ **Context handling**: Proper context length limits for each model (gemma3:12b supports 128k context)
 - ✅ **Error handling**: Graceful fallbacks and clear error messages
 - ✅ **Flexible deployment**: Works with local, hosted, and custom setups
 - ✅ **Latest models**: Includes Gemma3 12B with enhanced performance
