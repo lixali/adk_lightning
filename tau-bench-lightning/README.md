@@ -14,10 +14,7 @@ python run.py --agent-strategy tool-calling --env retail --model gemini-2.5-flas
 - ✅ Added `GOOGLE = "google"` to the `Platform` enum in `tau_bench/model_utils/model/model.py`
 - ✅ Created `GoogleModel` class in `tau_bench/model_utils/model/google.py` with full feature support:
   - Chat completion via litellm
-  - Cost tracking with Gemini pricing
-  - Capability scoring 
-  - Context length limits
-  - Temperature handling
+
 
 ### 2. Model Factory Integration  
 - ✅ Added Google platform case to `model_factory()` in `tau_bench/model_utils/model/general_model.py`
@@ -70,17 +67,6 @@ export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your/service-account-key.json"
 gcloud auth activate-service-account --key-file=/path/to/your/service-account-key.json
 ```
 
-### Enable Vertex AI API
-If Vertex AI API is not enabled on your project:
-
-```bash
-# Enable Vertex AI API
-gcloud services enable aiplatform.googleapis.com
-
-# Verify it's enabled
-gcloud services list --enabled --filter="name:aiplatform.googleapis.com"
-```
-
 ### Troubleshooting Authentication
 
 #### Check Your Setup
@@ -113,9 +99,6 @@ gcloud ai models list --region=us-central1
 
 ## Models Supported:
 - `gemini-2.5-flash` (recommended)
-- `gemini-1.5-flash`
-- `gemini-1.5-pro`
-- All variants (001, 002, etc.)
 
 ## Usage Examples:
 
