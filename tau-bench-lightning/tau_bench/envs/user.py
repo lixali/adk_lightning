@@ -51,18 +51,22 @@ class HumanUserSimulationEnv(BaseUserSimulationEnv):
 
 
 class LLMUserSimulationEnv(BaseUserSimulationEnv):
-    def __init__(self, model: str, provider: str) -> None:
+    def __init__(self, model: str, provider: str, temperature: float = 1.0) -> None:
         super().__init__()
         self.messages: List[Dict[str, Any]] = []
         self.model = model
         self.provider = provider
+        self.temperature = temperature
         self.total_cost = 0.0
         self.reset()
 
     def generate_next_message(self, messages: List[Dict[str, Any]]) -> str:
         mapped_provider = map_provider_to_litellm(self.provider, self.model)
         res = completion(
-            model=self.model, custom_llm_provider=mapped_provider, messages=messages
+            model=self.model, 
+            custom_llm_provider=mapped_provider, 
+            messages=messages,
+            temperature=self.temperature
         )
         message = res.choices[0].message
         self.messages.append(message.model_dump())
@@ -103,8 +107,8 @@ Rules:
 
 
 class ReactUserSimulationEnv(LLMUserSimulationEnv):
-    def __init__(self, model: str, provider: str) -> None:
-        super().__init__(model=model, provider=provider)
+    def __init__(self, model: str, provider: str, temperature: float = 1.0) -> None:
+        super().__init__(model=model, provider=provider, temperature=temperature)
         self.reset()
 
     def build_system_prompt(self, instruction: Optional[str]) -> str:
@@ -172,9 +176,10 @@ User Response:
 
 
 class VerifyUserSimulationEnv(LLMUserSimulationEnv):
-    def __init__(self, model: str, provider: str, max_attempts: int = 3) -> None:
+    def __init__(self, model: str, provider: str, temperature: float = 1.0, max_attempts: int = 3) -> None:
         self.model = model
         self.provider = provider
+        self.temperature = temperature
         self.max_attempts = max_attempts
         self.reset()
 
@@ -287,9 +292,10 @@ Response:
 
 
 class ReflectionUserSimulationEnv(LLMUserSimulationEnv):
-    def __init__(self, model: str, provider: str, max_attempts: int = 2) -> None:
+    def __init__(self, model: str, provider: str, temperature: float = 1.0, max_attempts: int = 2) -> None:
         self.model = model
         self.provider = provider
+        self.temperature = temperature
         self.max_attempts = max_attempts
         self.reset()
 
@@ -340,6 +346,7 @@ def load_user(
     user_strategy: Union[str, UserStrategy],
     model: Optional[str] = "gpt-4o",
     provider: Optional[str] = None,
+    temperature: float = 1.0,
 ) -> BaseUserSimulationEnv:
     if isinstance(user_strategy, str):
         user_strategy = UserStrategy(user_strategy)
@@ -350,23 +357,23 @@ def load_user(
             raise ValueError("LLM user strategy requires a model")
         if provider is None:
             raise ValueError("LLM user strategy requires a model provider")
-        return LLMUserSimulationEnv(model=model, provider=provider)
+        return LLMUserSimulationEnv(model=model, provider=provider, temperature=temperature)
     elif user_strategy == UserStrategy.REACT:
         if model is None:
             raise ValueError("React user strategy requires a model")
         if provider is None:
             raise ValueError("React user strategy requires a model provider")
-        return ReactUserSimulationEnv(model=model, provider=provider)
+        return ReactUserSimulationEnv(model=model, provider=provider, temperature=temperature)
     elif user_strategy == UserStrategy.VERIFY:
         if model is None:
             raise ValueError("Verify user strategy requires a model")
         if provider is None:
             raise ValueError("Verify user strategy requires a model provider")
-        return VerifyUserSimulationEnv(model=model, provider=provider)
+        return VerifyUserSimulationEnv(model=model, provider=provider, temperature=temperature)
     elif user_strategy == UserStrategy.REFLECTION:
         if model is None:
             raise ValueError("Reflection user strategy requires a model")
         if provider is None:
             raise ValueError("Reflection user strategy requires a model provider")
-        return ReflectionUserSimulationEnv(model=model, provider=provider)
+        return ReflectionUserSimulationEnv(model=model, provider=provider, temperature=temperature)
     raise ValueError(f"Unknown user strategy {user_strategy}")

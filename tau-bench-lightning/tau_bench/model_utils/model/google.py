@@ -10,6 +10,7 @@ API_KEY_ENV_VAR = "GOOGLE_API_KEY"
 
 PRICE_PER_INPUT_TOKEN_MAP = {
     "gemini-2.5-flash": 0.075 / 1000000,  # $0.075 per 1M input tokens
+    "gemini-2.5-pro": 1.25 / 1000000,     # $1.25 per 1M input tokens (estimated)
     "gemini-1.5-flash": 0.075 / 1000000,  # $0.075 per 1M input tokens
     "gemini-1.5-flash-001": 0.075 / 1000000,
     "gemini-1.5-flash-002": 0.075 / 1000000,
@@ -20,6 +21,7 @@ PRICE_PER_INPUT_TOKEN_MAP = {
 
 PRICE_PER_OUTPUT_TOKEN_MAP = {
     "gemini-2.5-flash": 0.3 / 1000000,    # $0.3 per 1M output tokens
+    "gemini-2.5-pro": 5.0 / 1000000,      # $5.0 per 1M output tokens (estimated)
     "gemini-1.5-flash": 0.3 / 1000000,    # $0.3 per 1M output tokens
     "gemini-1.5-flash-001": 0.3 / 1000000,
     "gemini-1.5-flash-002": 0.3 / 1000000,
@@ -33,6 +35,7 @@ OUTPUT_PRICE_PER_TOKEN_FALLBACK = 4.0 / 1000000
 
 CAPABILITY_SCORE_MAP = {
     "gemini-2.5-flash": 0.9,
+    "gemini-2.5-pro": 0.95,
     "gemini-1.5-flash": 0.8,
     "gemini-1.5-flash-001": 0.8,
     "gemini-1.5-flash-002": 0.8,

@@ -4,6 +4,7 @@ import os
 import json
 import random
 import traceback
+import time
 from math import comb
 import multiprocessing
 from typing import List, Dict, Any
@@ -18,6 +19,9 @@ from tau_bench.envs.user import UserStrategy
 
 
 def run(config: RunConfig) -> List[EnvRunResult]:
+    # Start timing the run
+    start_time = time.time()
+    
     # Add our custom providers to the litellm provider list
     custom_providers = ["gemma", "google"]  # Our custom providers
     all_providers = list(provider_list) + custom_providers
@@ -31,7 +35,7 @@ def run(config: RunConfig) -> List[EnvRunResult]:
 
     random.seed(config.seed)
     time_str = datetime.now().strftime("%m%d%H%M%S")
-    ckpt_path = f"{config.log_dir}/{config.agent_strategy}-{config.model.split('/')[-1]}-{config.temperature}_range_{config.start_index}-{config.end_index}_user-{config.user_model}-{config.user_strategy}_{time_str}.json"
+    ckpt_path = f"{config.log_dir}/{config.agent_strategy}-{config.model.split('/')[-1]}-{config.temperature}_range_{config.start_index}-{config.end_index}_user-{config.user_model}-{config.user_strategy}_{config.env}_{time_str}.json"
     if not os.path.exists(config.log_dir):
         os.makedirs(config.log_dir)
 
@@ -41,6 +45,7 @@ def run(config: RunConfig) -> List[EnvRunResult]:
         user_strategy=config.user_strategy,
         user_model=config.user_model,
         user_provider=config.user_model_provider,
+        user_temperature=config.user_temperature,
         task_split=config.task_split,
     )
     agent = agent_factory(
@@ -74,6 +79,7 @@ def run(config: RunConfig) -> List[EnvRunResult]:
                 user_model=config.user_model,
                 task_split=config.task_split,
                 user_provider=config.user_model_provider,
+                user_temperature=config.user_temperature,
                 task_index=idx,
             )
 
@@ -119,9 +125,38 @@ def run(config: RunConfig) -> List[EnvRunResult]:
 
     display_metrics(results)
 
+    # Calculate total runtime
+    end_time = time.time()
+    total_runtime = end_time - start_time
+    runtime_minutes = total_runtime / 60
+    runtime_hours = total_runtime / 3600
+    
+    # Print runtime to terminal
+    print(f"\n⏱️  Total Runtime: {total_runtime:.2f} seconds ({runtime_minutes:.2f} minutes, {runtime_hours:.2f} hours)")
+    
+    # Log runtime to file - use same naming pattern as result file but with .log extension
+    runtime_log_path = f"{config.log_dir}/{config.agent_strategy}-{config.model.split('/')[-1]}-{config.temperature}_range_{config.start_index}-{config.end_index}_user-{config.user_model}-{config.user_strategy}_{config.env}_{time_str}.log"
+    with open(runtime_log_path, "w") as f:  # Use 'w' instead of 'a' since each run gets its own log file
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        log_entry = (
+            f"[{timestamp}] "
+            f"Env: {config.env}, "
+            f"Model: {config.model}, "
+            f"Agent_Temperature: {config.temperature}, "
+            f"User_Temperature: {config.user_temperature}, "
+            f"Seed: {config.seed}, "
+            f"Tasks: {config.start_index}-{config.end_index}, "
+            f"Trials: {config.num_trials}, "
+            f"Concurrency: {config.max_concurrency}, "
+            f"Runtime: {total_runtime:.2f}s ({runtime_minutes:.2f}m, {runtime_hours:.2f}h)\n"
+        )
+        f.write(log_entry)
+    
+    print(f"📊 Runtime logged to {runtime_log_path}")
+
     with open(ckpt_path, "w") as f:
         json.dump([result.model_dump() for result in results], f, indent=2)
-        print(f"\n📄 Results saved to {ckpt_path}\n")
+        print(f"📄 Results saved to {ckpt_path}\n")
     return results
 
 

@@ -1,0 +1,20 @@
+# Example of what the runtime log files will contain after running experiments:
+# Each experiment now gets its own log file with the same naming pattern as the JSON results
+
+# File: tool-calling-gemma:7b-0.0_range_0-115_user-gemini-2.5-flash-llm_retail_0902053957.log
+[2025-09-02 14:30:15] Env: retail, Model: gemma:7b, Agent_Temperature: 0.0, User_Temperature: 1.0, Seed: 10, Tasks: 0-115, Trials: 1, Concurrency: 1, Runtime: 1847.32s (30.79m, 0.51h)
+
+# File: tool-calling-gemini-1.5-flash-0.0_range_0-50_user-gemini-2.5-pro-llm_airline_0902154522.log  
+[2025-09-02 15:45:22] Env: airline, Model: gemini-1.5-flash, Agent_Temperature: 0.0, User_Temperature: 0.5, Seed: 42, Tasks: 0-50, Trials: 3, Concurrency: 2, Runtime: 2134.56s (35.58m, 0.59h)
+
+# File: tool-calling-gemma3:12b-0.5_range_0-115_user-gemini-2.5-pro-llm_retail_0902172010.log
+[2025-09-02 17:20:10] Env: retail, Model: gemma3:12b, Agent_Temperature: 0.5, User_Temperature: 0.2, Seed: 123, Tasks: 0-115, Trials: 1, Concurrency: 4, Runtime: 923.45s (15.39m, 0.26h)
+
+# Benefits of the new format:
+# 1. Each experiment has its own log file matching the JSON result file
+# 2. Includes both agent and user model temperatures for complete reproducibility  
+# 3. Includes seed for random number generation reproducibility
+# 4. Easy to match log files with result files
+# 5. All parameters needed to reproduce the exact experiment are logged
+# 6. Supports gemini-2.5-pro as both agent and user model option
+# 7. Default user temperature is now 1.0 for more varied user responses
