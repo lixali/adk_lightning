@@ -10,6 +10,14 @@ pip install google-generativeai
 gcloud auth login
 ```
 
+To use Gemini-model vertex AI , install the following (this is not required to install to run this framework because litellm is using ollama to call Gemini)
+
+```
+
+pip install google-cloud-aiplatform
+
+```
+
 ## ✅ Integration Complete!
 
 The Gemini-2.5-flash and Gemma3 model has been successfully integrated into the tau-bench codebase. You can now run the exact command you requested:
