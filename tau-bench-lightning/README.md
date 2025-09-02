@@ -1,4 +1,4 @@
-# tau-bench: Gemini Integration
+# tau-bench: Gemma3-12B and Gemini Integration
 
 Following commands needs to be run to install necessary packages 
 
