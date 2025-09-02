@@ -3,12 +3,32 @@
 
 # File: tool-calling-gemma:7b-0.0_range_0-115_user-gemini-2.5-flash-llm_retail_0902053957.log
 [2025-09-02 14:30:15] Env: retail, Model: gemma:7b, Agent_Temperature: 0.0, User_Temperature: 1.0, Seed: 10, Tasks: 0-115, Trials: 1, Concurrency: 1, Runtime: 1847.32s (30.79m, 0.51h)
+Performance Metrics:
+- Average Reward: 0.5043
+- Number of Tasks: 115
+- Number of Trials: 1
+- Pass^k Metrics:
+  * Pass^1: 0.5043
 
 # File: tool-calling-gemini-1.5-flash-0.0_range_0-50_user-gemini-2.5-pro-llm_airline_0902154522.log  
 [2025-09-02 15:45:22] Env: airline, Model: gemini-1.5-flash, Agent_Temperature: 0.0, User_Temperature: 0.5, Seed: 42, Tasks: 0-50, Trials: 3, Concurrency: 2, Runtime: 2134.56s (35.58m, 0.59h)
+Performance Metrics:
+- Average Reward: 0.6800
+- Number of Tasks: 50
+- Number of Trials: 3
+- Pass^k Metrics:
+  * Pass^1: 0.6800
+  * Pass^2: 0.8200
+  * Pass^3: 0.9000
 
 # File: tool-calling-gemma3:12b-0.5_range_0-115_user-gemini-2.5-pro-llm_retail_0902172010.log
 [2025-09-02 17:20:10] Env: retail, Model: gemma3:12b, Agent_Temperature: 0.5, User_Temperature: 0.2, Seed: 123, Tasks: 0-115, Trials: 1, Concurrency: 4, Runtime: 923.45s (15.39m, 0.26h)
+Performance Metrics:
+- Average Reward: 0.4174
+- Number of Tasks: 115
+- Number of Trials: 1
+- Pass^k Metrics:
+  * Pass^1: 0.4174
 
 # Benefits of the new format:
 # 1. Each experiment has its own log file matching the JSON result file
@@ -18,3 +38,4 @@
 # 5. All parameters needed to reproduce the exact experiment are logged
 # 6. Supports gemini-2.5-pro as both agent and user model option
 # 7. Default user temperature is now 1.0 for more varied user responses
+# 8. NOW INCLUDES PASS^K METRICS IN THE LOG FILE for easy analysis

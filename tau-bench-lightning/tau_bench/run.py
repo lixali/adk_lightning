@@ -123,7 +123,7 @@ def run(config: RunConfig) -> List[EnvRunResult]:
             res = list(executor.map(_run, idxs))
             results.extend(res)
 
-    display_metrics(results)
+    metrics = display_metrics(results)
 
     # Calculate total runtime
     end_time = time.time()
@@ -138,6 +138,8 @@ def run(config: RunConfig) -> List[EnvRunResult]:
     runtime_log_path = f"{config.log_dir}/{config.agent_strategy}-{config.model.split('/')[-1]}-{config.temperature}_range_{config.start_index}-{config.end_index}_user-{config.user_model}-{config.user_strategy}_{config.env}_{time_str}.log"
     with open(runtime_log_path, "w") as f:  # Use 'w' instead of 'a' since each run gets its own log file
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        # Basic run information
         log_entry = (
             f"[{timestamp}] "
             f"Env: {config.env}, "
@@ -150,6 +152,20 @@ def run(config: RunConfig) -> List[EnvRunResult]:
             f"Concurrency: {config.max_concurrency}, "
             f"Runtime: {total_runtime:.2f}s ({runtime_minutes:.2f}m, {runtime_hours:.2f}h)\n"
         )
+        
+        # Add performance metrics
+        log_entry += (
+            f"Performance Metrics:\n"
+            f"- Average Reward: {metrics['average_reward']:.4f}\n"
+            f"- Number of Tasks: {metrics['num_tasks']}\n"
+            f"- Number of Trials: {metrics['num_trials']}\n"
+            f"- Pass^k Metrics:\n"
+        )
+        
+        # Add Pass^k results
+        for k, pass_k_value in metrics['pass_k_metrics'].items():
+            log_entry += f"  * Pass^{k}: {pass_k_value:.4f}\n"
+        
         f.write(log_entry)
     
     print(f"📊 Runtime logged to {runtime_log_path}")
@@ -216,7 +232,7 @@ def agent_factory(
         raise ValueError(f"Unknown agent strategy: {config.agent_strategy}")
 
 
-def display_metrics(results: List[EnvRunResult]) -> None:
+def display_metrics(results: List[EnvRunResult]) -> Dict[str, Any]:
     def is_successful(reward: float) -> bool:
         return (1 - 1e-6) <= reward <= (1 + 1e-6)
 
@@ -236,7 +252,17 @@ def display_metrics(results: List[EnvRunResult]) -> None:
         for c in c_per_task_id.values():
             sum_task_pass_hat_k += comb(c, k) / comb(num_trials, k)
         pass_hat_ks[k] = sum_task_pass_hat_k / len(c_per_task_id)
+    
+    # Print to terminal (existing behavior)
     print(f"🏆 Average reward: {avg_reward}")
     print("📈 Pass^k")
     for k, pass_hat_k in pass_hat_ks.items():
         print(f"  k={k}: {pass_hat_k}")
+    
+    # Return metrics for logging
+    return {
+        "average_reward": avg_reward,
+        "num_trials": num_trials,
+        "num_tasks": len(c_per_task_id),
+        "pass_k_metrics": pass_hat_ks
+    }
