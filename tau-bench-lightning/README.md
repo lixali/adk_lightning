@@ -1,5 +1,15 @@
 # tau-bench: Gemini Integration
 
+Following commands needs to be run to install necessary packages 
+
+```
+
+pip install litellm
+pip install google-generativeai
+
+gcloud auth login
+```
+
 ## ✅ Integration Complete!
 
 The Gemini-2.5-flash and Gemma3 model has been successfully integrated into the tau-bench codebase. You can now run the exact command you requested:
