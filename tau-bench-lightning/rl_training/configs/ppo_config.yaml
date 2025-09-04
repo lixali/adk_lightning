@@ -1,0 +1,46 @@
+# PPO Training Configuration for Gemma3
+model:
+  name: "google/gemma-3-12b-it"
+  use_flash_attention: true
+  
+training:
+  num_episodes: 50
+  rollouts_per_episode: 20
+  learning_rate: 1.0e-5
+  critic_learning_rate: 1.0e-4
+  ppo_epochs: 4
+  clip_epsilon: 0.2
+  kl_coeff: 0.02
+  max_kl: 0.1
+  gamma: 0.99
+  gae_lambda: 0.95
+  max_grad_norm: 1.0
+  temperature: 0.7
+  gradient_accumulation_steps: 4
+  # max_sequence_length: 1024  # Removed for better performance - no sequence truncation
+  
+lora:
+  r: 16
+  alpha: 32
+  dropout: 0.1
+  
+hardware:
+  gpu_count: 8
+  tensor_parallel_size: 8
+  gpu_memory_utilization: 0.9
+  
+output:
+  output_dir: "./rl_training/outputs"
+  save_every: 5
+  
+wandb:
+  project: "gemma3-tau-bench-ppo"
+  enabled: true
+  
+data:
+  focus_env: "retail"
+  focus_on_wrong_decisions: true
+  
+reward_model:
+  provider: "vertex_ai"
+  model: "gemini-2.5-pro"
