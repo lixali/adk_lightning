@@ -43,6 +43,49 @@ python run.py --agent-strategy tool-calling --env retail --model gemini-2.5-flas
 - ✅ Supports `gemini` provider (requires GOOGLE_API_KEY)
 - ✅ Tool calling functionality verified and working
 
+## Prompt Locations in the Codebase
+
+### Policy Input Prompts (for the trained policy)
+The input prompts that define the policy behavior are located in:
+
+**Retail Domain:**
+- **File:** `tau_bench/envs/retail/wiki.md` (Lines 1-82)
+- **Purpose:** Complete retail agent policy with authentication, order management, returns, exchanges
+- **Key Sections:** User authentication, order cancellation, modifications, returns, exchanges
+- **Usage:** Loaded via `tau_bench/envs/retail/wiki.py` and integrated into agent prompt in `tau_bench/agents/chat_react_agent.py`
+
+**Airline Domain:**
+- **File:** `tau_bench/envs/airline/wiki.md` (Lines 1-71) 
+- **Purpose:** Airline agent policy for flight booking, modification, cancellation
+- **Key Sections:** Flight booking, reservation modifications, baggage policies, payment rules
+- **Usage:** Loaded via `tau_bench/envs/airline/wiki.py` and integrated into agent prompt
+
+**Agent Instruction Templates:**
+- **File:** `tau_bench/agents/chat_react_agent.py` (Lines 100-199)
+- **Components:**
+  - `REACT_INSTRUCTION`: Full reasoning format with "Thought:" and "Action:" steps
+  - `ACT_INSTRUCTION`: Direct action format without explicit reasoning
+- **Integration:** Combined with wiki policy content to form complete system prompt (Line 29-31)
+
+### Reward Prompts (for training evaluation)
+The reward model prompts are located in:
+
+**Reward Model Implementation:**
+- **File:** `rl_training/reward_model.py` (Lines 50-140)
+- **Method:** `create_reward_prompt()` 
+- **Content:** Detailed evaluation criteria with weighted scoring:
+  - Decision Making Quality (40%)
+  - Factual Accuracy (30%) 
+  - Task Completion (20%)
+  - User Experience (10%)
+- **Examples:** Includes one-shot examples for "Good" vs "Bad" responses
+- **Output:** Returns structured evaluation with score, reasoning, and criteria breakdown
+
+**Integration Points:**
+- Reward prompts are used during PPO training in `rl_training/ppo_trainer.py`
+- Episode evaluation happens via `rl_training/tau_bench_data_collector.py`
+- Gemini-2.5-pro model serves as the reward evaluator with detailed scoring rubric
+
 ## Authentication Setup
 
 ### How Authentication Works
