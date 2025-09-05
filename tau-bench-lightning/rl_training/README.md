@@ -108,6 +108,46 @@ hardware:
 4. **Value Function**: Train critic to estimate state values
 5. **Iteration**: Repeat for specified number of episodes
 
+### Policy Rollout Data Collection
+
+**Rollout Data Generation Location:**
+- **File**: `rl_training/tau_bench_data_collector.py` (Lines 207-280)
+- **Method**: `generate_episode()` 
+- **Content**: Mock conversation trajectories for PPO training data
+- **Usage**: Called during PPO training to collect rollout experiences
+
+**Current Episode Data Structure:**
+
+```python
+episode = {
+    "trajectory": [
+        {
+            "role": "user",
+            "content": "Hi, I need help with my order."
+        },
+        {
+            "role": "assistant", 
+            "content": "I'd be happy to help you with your order. Can you please provide your order number?"
+        },
+        {
+            "role": "user",
+            "content": "It's order #12345. I want to cancel it."
+        },
+        {
+            "role": "assistant",
+            "content": "I can help you cancel order #12345. Let me process that for you right away."
+        }
+    ],
+    "reward": 0.75,  # Calculated by Gemini-2.5-pro reward model
+    "task_id": "mock_task_42",
+    "success": True
+}
+```
+
+⚠️ **Note**: Currently using mock episodes for testing. The full tau-bench integration with actual task scenarios and tool calling is planned for future implementation. 
+
+For detailed information about tau-bench conversation flow and tool calling mechanisms, see [`../TAU_BENCH_CONVERSATION_FLOW.md`](../TAU_BENCH_CONVERSATION_FLOW.md).
+
 ### Reward Model Design
 
 The Gemini-2.5-pro reward model evaluates:
@@ -116,6 +156,96 @@ The Gemini-2.5-pro reward model evaluates:
 - **Information Accuracy (30%)**: Proper use of tool arguments
 - **Task Completion (20%)**: Successful resolution of user request
 - **User Experience (10%)**: Communication quality
+
+**Reward Model Prompt Location:**
+- **File**: `rl_training/reward_model.py` (Lines 50-140)
+- **Method**: `create_reward_prompt()` 
+- **Content**: Detailed evaluation criteria with weighted scoring and one-shot examples
+- **Usage**: Called during PPO training to evaluate each trajectory with Gemini-2.5-pro
+
+**Complete Reward Model Prompt:**
+
+**Reward Model Prompt Location:**
+- **File**: `rl_training/reward_model.py` (Lines 50-140)
+- **Method**: `create_reward_prompt()` 
+- **Content**: Detailed evaluation criteria with weighted scoring and one-shot examples
+- **Usage**: Called during PPO training to evaluate each trajectory with Gemini-2.5-pro
+
+⚠️ **Note**: The examples below contain synthetic data that may not align with actual tau-bench ground truth. The reward model example uses `get_customer_info` but tau-bench actually uses `find_user_id_by_name_zip` and `get_user_details`. This should be validated against real tau-bench task data.
+
+```
+You are an expert reward model for training AI assistants in customer service scenarios. Your job is to evaluate how well the agent handled the task and provide a reward score between 0.0 and 1.0.
+
+**EVALUATION CRITERIA:**
+1. **Correct Decision Making (40%)** - Did the agent make the right type of tool calls based on the user request?
+2. **Accurate Information (30%)** - Did the agent provide correct information and use tool arguments properly?
+3. **Task Completion (20%)** - Did the agent successfully complete the user's request?
+4. **User Experience (10%)** - Was the interaction smooth and professional?
+
+**ONE-SHOT EXAMPLE OF EXCELLENT PERFORMANCE (Reward: 1.0):**
+User Request: "I'm Sofia Martinez from 90210. I want to cancel my recent grill order but keep everything else."
+
+Expected Ground Truth Actions:
+- get_customer_info(customer_name="Sofia Martinez", zip_code="90210")
+- get_order_details for found orders
+- cancel_order for the grill order specifically
+
+EXCELLENT Agent Response:
+1. ASSISTANT: "I'll help you cancel your grill order. Let me first look up your account."
+2. ASSISTANT (tool calls): [{"name": "get_customer_info", "arguments": {"customer_name": "Sofia Martinez", "zip_code": "90210"}}]
+3. SYSTEM: Returns customer info with order IDs [ABC123, DEF456]
+4. ASSISTANT (tool calls): [{"name": "get_order_details", "arguments": {"order_id": "ABC123"}}]
+5. SYSTEM: Returns order details showing grill + other items
+6. ASSISTANT (tool calls): [{"name": "cancel_order", "arguments": {"order_id": "ABC123", "reason": "Customer request"}}]
+7. ASSISTANT: "Perfect! I've cancelled your grill order ABC123. Your other orders remain active."
+
+Why this gets 1.0: Perfect decision making (correct tool sequence), accurate use of provided information, complete task resolution, excellent user communication.
+
+**NOW EVALUATE THIS TASK:**
+
+**User Instruction:** {gt_instruction}
+
+**Expected Ground Truth Actions:** {gt_actions}
+
+**Expected Outputs:** {gt_outputs}
+
+**Agent's Actual Conversation:**
+{conversation_text}
+
+**REWARD CALCULATION GUIDELINES:**
+
+**Decision Making Quality (0.0-0.4):**
+- 0.4: Perfect tool selection and sequence
+- 0.3: Mostly correct tools with minor inefficiencies  
+- 0.2: Some correct tools but missing key actions
+- 0.1: Wrong tools chosen but attempting to help
+- 0.0: Completely wrong approach or no tools used
+
+**Information Accuracy (0.0-0.3):**
+- 0.3: All tool arguments correct, no hallucinated info
+- 0.2: Minor argument errors but mostly accurate
+- 0.1: Some correct info but notable errors
+- 0.0: Major inaccuracies or complete hallucination
+
+**Task Completion (0.0-0.2):**
+- 0.2: Task fully completed as requested
+- 0.1: Partially completed or incomplete resolution
+- 0.0: Task not completed
+
+**User Experience (0.0-0.1):**
+- 0.1: Professional, clear communication
+- 0.05: Adequate communication
+- 0.0: Poor or confusing communication
+
+Please provide your evaluation in this exact format:
+
+DECISION_MAKING_SCORE: [0.0-0.4]
+INFORMATION_ACCURACY_SCORE: [0.0-0.3] 
+TASK_COMPLETION_SCORE: [0.0-0.2]
+USER_EXPERIENCE_SCORE: [0.0-0.1]
+TOTAL_REWARD: [sum of above scores, 0.0-1.0]
+REASONING: [Brief explanation of your scoring]
+```
 
 ### Wrong Decision Focus
 
@@ -248,16 +378,6 @@ TASK_COMPLETION_WEIGHT = 0.2  # Default: 20%
 USER_EXPERIENCE_WEIGHT = 0.1  # Default: 10%
 ```
 
-### Multi-Environment Training
-
-Train on both retail and airline environments:
-
-```yaml
-data:
-  environments: ["retail", "airline"]
-  environment_weights: [0.7, 0.3]  # 70% retail, 30% airline
-```
-
 ## 🔬 Experimental Features
 
 ### Curriculum Learning
@@ -281,18 +401,6 @@ Use trained model to teach smaller models:
 - Knowledge transfer techniques
 - Deployment efficiency
 
-## 📄 Citation
-
-If you use this training setup in your research, please cite:
-
-```bibtex
-@software{gemma3_ppo_training,
-  title={PPO Training for Gemma3 with Gemini-2.5-pro Reward Model},
-  author={Your Name},
-  year={2025},
-  url={https://github.com/your-repo/tau-bench-lightning}
-}
-```
 
 ## 🤝 Contributing
 
@@ -306,7 +414,7 @@ If you use this training setup in your research, please cite:
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 🙏 Acknowledgments
+## Tools and Libraries Used
 
 - **Google** for Gemma and Gemini models
 - **Hugging Face** for transformers library
