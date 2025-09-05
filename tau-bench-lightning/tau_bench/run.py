@@ -23,7 +23,7 @@ def run(config: RunConfig) -> List[EnvRunResult]:
     start_time = time.time()
     
     # Add our custom providers to the litellm provider list
-    custom_providers = ["gemma", "google"]  # Our custom providers
+    custom_providers = ["gemma", "google", "sft"]  # Our custom providers (added sft)
     all_providers = list(provider_list) + custom_providers
     
     assert config.env in ["retail", "airline"], "Only retail and airline envs are supported"

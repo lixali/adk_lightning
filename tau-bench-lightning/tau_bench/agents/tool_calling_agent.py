@@ -2,6 +2,13 @@
 
 import json
 from litellm import completion
+import sys
+import os
+
+# Add sft_training to path for SFT model integration
+sft_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "sft_training")
+if os.path.exists(sft_path) and sft_path not in sys.path:
+    sys.path.insert(0, sft_path)
 from typing import List, Optional, Dict, Any
 
 from tau_bench.agents.base import Agent
@@ -38,6 +45,10 @@ class ToolCallingAgent(Agent):
                 # Assume HuggingFace format
                 self.litellm_provider = "huggingface"
                 self.litellm_model = f"google/{model}" if not model.startswith("google/") else model
+        elif provider == "sft":
+            # SFT fine-tuned models - use custom handler
+            self.litellm_provider = "sft"
+            self.litellm_model = model
         else:
             # Use provider and model as-is for standard litellm providers
             self.litellm_provider = provider
@@ -56,13 +67,42 @@ class ToolCallingAgent(Agent):
             {"role": "user", "content": obs},
         ]
         for _ in range(max_num_steps):
-            res = completion(
-                messages=messages,
-                model=self.litellm_model,
-                custom_llm_provider=self.litellm_provider,
-                tools=self.tools_info,
-                temperature=self.temperature,
-            )
+            # Handle SFT models specially
+            if self.litellm_provider == "sft":
+                try:
+                    from sft_model_provider import get_sft_model_provider
+                    sft_provider = get_sft_model_provider(self.litellm_model)
+                    res = sft_provider.completion(
+                        messages=messages,
+                        tools=self.tools_info,
+                        temperature=self.temperature,
+                    )
+                    # Convert to litellm-compatible response format
+                    class MockResponse:
+                        def __init__(self, response_data):
+                            self.choices = [type('Choice', (), {
+                                'message': type('Message', (), response_data['choices'][0]['message'])()
+                            })()]
+                            self._hidden_params = {"response_cost": 0.0}  # SFT models are free
+                    
+                    res = MockResponse(res)
+                except ImportError:
+                    print("SFT model provider not available, falling back to litellm")
+                    res = completion(
+                        messages=messages,
+                        model=self.litellm_model,
+                        custom_llm_provider=self.litellm_provider,
+                        tools=self.tools_info,
+                        temperature=self.temperature,
+                    )
+            else:
+                res = completion(
+                    messages=messages,
+                    model=self.litellm_model,
+                    custom_llm_provider=self.litellm_provider,
+                    tools=self.tools_info,
+                    temperature=self.temperature,
+                )
             next_message = res.choices[0].message.model_dump()
             total_cost += res._hidden_params["response_cost"]
             action = message_to_action(next_message)
