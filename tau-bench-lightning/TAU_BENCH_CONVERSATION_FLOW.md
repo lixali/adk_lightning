@@ -155,6 +155,130 @@ def message_to_action(message: Dict[str, Any]) -> Action:
 - **Creates Action object**: Converts to tau-bench's internal Action format with `name` and `kwargs`
 - **Handles text responses**: If no tool calls, creates a text response action
 
+## **How the LLM Knows Which Tools to Use**
+
+**The LLM receives ALL available tools as function definitions in every request!**
+
+### **Complete Input Structure Sent to LLM**
+
+**What the LLM Actually Receives:**
+1. **System Message**: Retail agent policy (~5,718 characters)
+2. **User Message**: "Hello, I want to exchange items from my order #W2378156"
+3. **Tools Parameter**: 16 complete OpenAI-compatible function definitions
+
+### **Tool Discovery and Definition Flow**
+
+**1. Tool Definition (Each Tool Has `get_info()` Method)**
+```python
+# From tau_bench/envs/retail/tools/get_order_details.py
+@staticmethod
+def get_info() -> Dict[str, Any]:
+    return {
+        "type": "function",
+        "function": {
+            "name": "get_order_details",  # ← Function name
+            "description": "Get the status and details of an order.",  # ← What it does
+            "parameters": {  # ← Expected arguments
+                "type": "object",
+                "properties": {
+                    "order_id": {
+                        "type": "string",
+                        "description": "The order id, such as '#W0000000'..."
+                    }
+                },
+                "required": ["order_id"]
+            }
+        }
+    }
+```
+
+**2. Tools Aggregation (Environment Setup)**
+```python
+# tau_bench/envs/retail/tools/__init__.py
+ALL_TOOLS = [
+    Calculate, CancelPendingOrder, ExchangeDeliveredOrderItems,
+    FindUserIdByEmail, FindUserIdByNameZip, GetOrderDetails,
+    GetProductDetails, GetUserDetails, ListAllProductTypes,
+    ModifyPendingOrderAddress, ModifyPendingOrderItems,
+    ModifyPendingOrderPayment, ModifyUserAddress,
+    ReturnDeliveredOrderItems, Think, TransferToHumanAgents,
+]
+```
+
+**3. Tool Info Extraction (Base Environment)**
+```python
+# tau_bench/envs/base.py line 64
+self.tools_info = [tool.get_info() for tool in tools]
+```
+
+**4. Tools Passed to LLM (Agent)**
+```python
+# tau_bench/agents/tool_calling_agent.py lines 60-65
+res = completion(
+    messages=messages,          # ← Conversation history
+    model=self.litellm_model,
+    custom_llm_provider=self.litellm_provider,
+    tools=self.tools_info,      # ← ALL 16 FUNCTION DEFINITIONS!
+    temperature=self.temperature,
+)
+```
+
+### **Complete Flow Summary**
+
+```
+1. ALL_TOOLS defined in tau_bench/envs/retail/tools/__init__.py
+   ↓
+2. Environment creates tools_info in tau_bench/envs/base.py:64
+   self.tools_info = [tool.get_info() for tool in tools]
+   ↓  
+3. Agent factory receives tools in tau_bench/run.py:53
+   tools_info=env.tools_info
+   ↓
+4. Agent constructor stores tools in tool_calling_agent.py:21
+   self.tools_info = tools_info
+   ↓
+5. LLM receives all inputs in tool_calling_agent.py:59-66
+   completion(
+       messages=[
+           {"role": "system", "content": self.wiki},    # ← System message
+           {"role": "user", "content": obs}             # ← User message  
+       ],
+       tools=self.tools_info,                          # ← 16 function definitions
+       ...
+   )
+```
+
+**The `completion()` call on lines 59-66 is where ALL THREE components are sent to the LLM as input!**
+
+### **All 16 Retail Tools Available to LLM**
+
+1. `calculate` - Calculate mathematical expressions
+2. `cancel_pending_order` - Cancel pending orders  
+3. `exchange_delivered_order_items` - Exchange delivered items
+4. `find_user_id_by_email` - Find user by email
+5. `find_user_id_by_name_zip` - Find user by name and zip
+6. `get_order_details` - Get order status and details
+7. `get_product_details` - Get product inventory details
+8. `get_user_details` - Get user profile and orders
+9. `list_all_product_types` - List all available products
+10. `modify_pending_order_address` - Change shipping address
+11. `modify_pending_order_items` - Modify pending order items
+12. `modify_pending_order_payment` - Change payment method
+13. `modify_user_address` - Update user's default address
+14. `return_delivered_order_items` - Return delivered items
+15. `think` - Internal reasoning tool
+16. `transfer_to_human_agents` - Escalate to human support
+
+### **Key Points**
+
+- ✅ **Function definitions ARE in the prompt** (via `tools` parameter)
+- ✅ **Standard OpenAI function calling format** 
+- ✅ **All tools available simultaneously** (no tool discovery needed)
+- ✅ **LLM chooses appropriate tools** based on user request and function descriptions
+- ✅ **Tool descriptions guide model decisions** about when and how to use each function
+
+**The model doesn't need to "discover" tools - it receives complete documentation of all available functions with every request!**
+
 ## **Conversation Flow Control - The If/Else Logic**
 
 **YES, there is explicit if/else logic that controls this flow!**

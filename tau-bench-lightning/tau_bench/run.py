@@ -35,7 +35,8 @@ def run(config: RunConfig) -> List[EnvRunResult]:
 
     random.seed(config.seed)
     time_str = datetime.now().strftime("%m%d%H%M%S")
-    ckpt_path = f"{config.log_dir}/{config.agent_strategy}-{config.model.split('/')[-1]}-{config.temperature}_range_{config.start_index}-{config.end_index}_user-{config.user_model}-{config.user_strategy}_{config.env}_{time_str}.json"
+    task_split_suffix = f"_{config.task_split}" if config.task_split != "test" else ""
+    ckpt_path = f"{config.log_dir}/{config.agent_strategy}-{config.model.split('/')[-1]}-{config.temperature}_range_{config.start_index}-{config.end_index}_user-{config.user_model}-{config.user_strategy}_{config.env}{task_split_suffix}_{time_str}.json"
     if not os.path.exists(config.log_dir):
         os.makedirs(config.log_dir)
 
@@ -135,7 +136,8 @@ def run(config: RunConfig) -> List[EnvRunResult]:
     print(f"\n⏱️  Total Runtime: {total_runtime:.2f} seconds ({runtime_minutes:.2f} minutes, {runtime_hours:.2f} hours)")
     
     # Log runtime to file - use same naming pattern as result file but with .log extension
-    runtime_log_path = f"{config.log_dir}/{config.agent_strategy}-{config.model.split('/')[-1]}-{config.temperature}_range_{config.start_index}-{config.end_index}_user-{config.user_model}-{config.user_strategy}_{config.env}_{time_str}.log"
+    task_split_suffix = f"_{config.task_split}" if config.task_split != "test" else ""
+    runtime_log_path = f"{config.log_dir}/{config.agent_strategy}-{config.model.split('/')[-1]}-{config.temperature}_range_{config.start_index}-{config.end_index}_user-{config.user_model}-{config.user_strategy}_{config.env}{task_split_suffix}_{time_str}.log"
     with open(runtime_log_path, "w") as f:  # Use 'w' instead of 'a' since each run gets its own log file
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
