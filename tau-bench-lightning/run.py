@@ -79,6 +79,7 @@ def parse_args() -> RunConfig:
     parser.add_argument("--shuffle", type=int, default=0)
     parser.add_argument("--user-strategy", type=str, default="llm", choices=[item.value for item in UserStrategy])
     parser.add_argument("--few-shot-displays-path", type=str, help="Path to a jsonlines file containing few shot displays")
+    parser.add_argument("--custom-suffix", type=str, help="Custom suffix to add to output filenames (e.g., '_version_1')")
     args = parser.parse_args()
     print(args)
     return RunConfig(
@@ -101,6 +102,7 @@ def parse_args() -> RunConfig:
         shuffle=args.shuffle,
         user_strategy=args.user_strategy,
         few_shot_displays_path=args.few_shot_displays_path,
+        custom_suffix=args.custom_suffix,
     )
 
 

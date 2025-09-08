@@ -7,3 +7,4 @@ tau-bench-lightning/sft_training/turn_level_sft_data_gemma.jsonl
 tau-bench-lightning/sft_training/simple_checkpoints
 tau-bench-lightning/sft_training/full_sft_data.jsonl
 tau-bench-lightning/sft_training/full_sft_data_gemma_compatible.jsonl
+tau-bench-lightning/sft_training/checkpoints/

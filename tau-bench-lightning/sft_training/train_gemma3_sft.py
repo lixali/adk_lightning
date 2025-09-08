@@ -35,6 +35,7 @@ import logging
 from typing import Dict, List, Any
 import wandb
 from datetime import datetime
+import random
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -280,23 +281,54 @@ def main():
     # Setup model and tokenizer
     model, tokenizer = setup_model_and_tokenizer(args.model_name)
     
-    # Create dataset
-    train_dataset = TauBenchSFTDataset(
+    # Create full dataset
+    full_dataset = TauBenchSFTDataset(
         args.data_file, 
         tokenizer, 
         max_length=args.max_length
     )
+    
+    # Split into train and validation (90/10 split)
+    total_size = len(full_dataset.conversations)
+    val_size = int(total_size * 0.1)
+    train_size = total_size - val_size
+    
+    # Shuffle indices for split
+    indices = list(range(total_size))
+    random.seed(42)
+    random.shuffle(indices)
+    
+    train_indices = indices[:train_size]
+    val_indices = indices[train_size:]
+    
+    # Create train and validation datasets
+    train_conversations = [full_dataset.conversations[i] for i in train_indices]
+    val_conversations = [full_dataset.conversations[i] for i in val_indices]
+    
+    # Create separate datasets
+    train_dataset = TauBenchSFTDataset.__new__(TauBenchSFTDataset)
+    train_dataset.tokenizer = tokenizer
+    train_dataset.max_length = args.max_length
+    train_dataset.conversations = train_conversations
+    
+    val_dataset = TauBenchSFTDataset.__new__(TauBenchSFTDataset)
+    val_dataset.tokenizer = tokenizer
+    val_dataset.max_length = args.max_length
+    val_dataset.conversations = val_conversations
     
     # Setup training arguments
     training_args = TrainingArguments(
         output_dir=args.output_dir,
         num_train_epochs=args.num_epochs,
         per_device_train_batch_size=args.batch_size,
+        per_device_eval_batch_size=args.batch_size,
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         learning_rate=args.learning_rate,
         warmup_steps=args.warmup_steps,
         logging_steps=args.logging_steps,
         save_steps=args.save_steps,
+        eval_steps=args.save_steps,  # Evaluate at same frequency as saving
+        eval_strategy="steps",  # Changed from evaluation_strategy
         save_total_limit=3,
         prediction_loss_only=True,
         remove_unused_columns=False,
@@ -305,6 +337,9 @@ def main():
         gradient_checkpointing=True,
         report_to=["wandb"],
         run_name=run_name,
+        load_best_model_at_end=True,
+        metric_for_best_model="eval_loss",
+        greater_is_better=False,
     )
     
     # Data collator
@@ -318,12 +353,14 @@ def main():
         model=model,
         args=training_args,
         train_dataset=train_dataset,
+        eval_dataset=val_dataset,
         data_collator=data_collator,
         tokenizer=tokenizer,
     )
     
     logger.info("Starting SFT training...")
     logger.info(f"Training samples: {len(train_dataset)}")
+    logger.info(f"Validation samples: {len(val_dataset)}")
     logger.info(f"Effective batch size: {args.batch_size * args.gradient_accumulation_steps}")
     logger.info(f"Total training steps: {len(train_dataset) // (args.batch_size * args.gradient_accumulation_steps) * args.num_epochs}")
     
@@ -342,6 +379,7 @@ def main():
         "model_name": args.model_name,
         "data_file": args.data_file,
         "training_samples": len(train_dataset),
+        "validation_samples": len(val_dataset),
         "training_args": vars(args),
         "final_model_path": final_output_dir,
         "training_completed": datetime.now().isoformat()
