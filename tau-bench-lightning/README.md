@@ -33,15 +33,64 @@ python run.py --agent-strategy tool-calling --env retail --model gemini-2.5-flas
 - ✅ Created `GoogleModel` class in `tau_bench/model_utils/model/google.py` with full feature support:
   - Chat completion via litellm
 
+## 🏗️ Model Architecture: No Model "Instantiation" - Just API Calls
 
-### 2. Model Factory Integration  
-- ✅ Added Google platform case to `model_factory()` in `tau_bench/model_utils/model/general_model.py`
-- ✅ Supports both API key and service account authentication
+### Key Insight: No Models are Actually Loaded in Python
+- **Agent Model**: Not an instantiated model - just configuration strings
+- **User Model**: Not an instantiated model - just configuration strings  
+- **Both models**: Use the same LiteLLM → Ollama → Gemma3:12b pipeline
+- **Only difference**: Different temperatures and tool configurations
 
-### 3. Provider Support
-- ✅ Uses `vertex_ai` provider (works with default Google Cloud credentials)
-- ✅ Supports `gemini` provider (requires GOOGLE_API_KEY)
-- ✅ Tool calling functionality verified and working
+### Agent Model Calling Location
+**File**: `tau_bench/agents/tool_calling_agent.py` (Lines 101-107)
+```python
+# THE AGENT MODEL API CALL - Line 101
+res = completion(
+    messages=messages,                    # Conversation history
+    model=self.litellm_model,            # "gemma3:12b" (STRING)
+    custom_llm_provider=self.litellm_provider,  # "ollama" (STRING)
+    tools=self.tools_info,               # 16 retail tools (ARRAY)
+    temperature=self.temperature,         # 0.0 (FLOAT - deterministic)
+)
+```
+
+### User Model Calling Location  
+**File**: `tau_bench/envs/user.py` (Lines 63-70)
+```python
+# THE USER MODEL API CALL - Line 65
+res = completion(
+    model=self.model,                    # "gemma3:12b" (STRING)
+    custom_llm_provider=mapped_provider, # "ollama" (STRING)
+    messages=messages,                   # User conversation history
+    temperature=self.temperature         # 1.0 (FLOAT - creative)
+)
+```
+
+### Model Configuration Setup
+**Agent Model Setup** (`tau_bench/agents/tool_calling_agent.py:45-48`):
+```python
+if provider == "gemma" and ":" in model:
+    self.litellm_provider = "ollama"     # STRING
+    self.litellm_model = "gemma3:12b"    # STRING
+```
+
+**User Model Setup** (`tau_bench/envs/user.py:15-17`):
+```python
+if provider == "gemma" and "gemma3:12b" in model:
+    return "ollama"                      # STRING returned
+```
+
+### Execution Flow Summary
+1. **Command Line** → Two separate configuration objects created
+2. **Agent Config**: `ToolCallingAgent(model="gemma3:12b", provider="gemma", temperature=0.0)`
+3. **User Config**: `LLMUserSimulationEnv(model="gemma3:12b", provider="gemma", temperature=1.0)`
+4. **Runtime**: Both make separate HTTP calls to the same Ollama server
+5. **Ollama**: Serves the same Gemma3:12b model weights to both API calls
+
+| Component | Location | Purpose | Model Call |
+|-----------|----------|---------|------------|
+| **Agent Model** | `tool_calling_agent.py:101` | Task solving with tools | `completion()` with tools + temp=0.0 |
+| **User Model** | `user.py:65` | Natural user responses | `completion()` with no tools + temp=1.0 |
 
 ## Prompt Locations in the Codebase
 
@@ -119,15 +168,6 @@ gcloud auth application-default login
 gcloud config set project YOUR_PROJECT_ID
 ```
 
-#### Option 2: Service Account (Production)
-```bash
-# Set service account credentials
-export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your/service-account-key.json"
-
-# Or authenticate with service account
-gcloud auth activate-service-account --key-file=/path/to/your/service-account-key.json
-```
-
 ### Troubleshooting Authentication
 
 #### Check Your Setup
@@ -145,32 +185,16 @@ gcloud ai models list --region=us-central1
 - **"API not enabled"**: Run `gcloud services enable aiplatform.googleapis.com`
 - **"Permission denied"**: Ensure your account has Vertex AI permissions
 
-### Why No Separate License?
-- **Gemini models are Google Cloud services** accessed through Vertex AI
-- **Your existing Google Cloud authentication** provides access
-- **Usage is pay-per-use** and billed to your Google Cloud project
-- **No separate API keys needed** when using `vertex_ai` provider
-
-## Test Results:
-- ✅ Basic completion: Working
-- ✅ Tool calling: Working  
-- ✅ User simulation: Working
-- ✅ Full tau-bench run: Working
-- ✅ Results generation: Working (saved to `results/` folder)
-
-## Models Supported:
-- `gemini-2.5-flash` (recommended)
-
 ## Usage Examples:
 
-### Basic Command (your request):
+### Basic Command:
 ```bash
-python run.py --agent-strategy tool-calling --env retail --model gemini-2.5-flash --model-provider vertex_ai --user-model gemini-2.5-flash --user-model-provider vertex_ai --user-strategy llm --max-concurrency 1
+python run.py --agent-strategy tool-calling --env retail --model gemini-2.5-pro --model-provider vertex_ai --user-model gemini-2.5-pro --user-model-provider vertex_ai --user-strategy llm --max-concurrency 1
 ```
 
-### With Gemini-1.5-flash Agent + Gemini-2.5-flash User:
+### With gemma3-12b Agent + Gemini-2.5-pro User:
 ```bash
-python run.py --agent-strategy tool-calling --env retail --model gemini-1.5-flash --model-provider vertex_ai --user-model gemini-2.5-flash --user-model-provider vertex_ai --user-strategy llm --max-concurrency 1
+python run.py --agent-strategy tool-calling --env retail --model gemma3:12b --model-provider gemma --user-model gemini-2.5-flash --user-model-provider vertex_ai --user-strategy llm --max-concurrency 1
 ```
 
 ### With Different Models:
@@ -202,12 +226,12 @@ python analyze_results.py results/your-results-file.json
 
 ### Example with Your Gemini Results:
 ```bash
-python analyze_results.py results/tool-calling-gemini-2.5-flash-0.0_range_0--1_user-gemini-2.5-flash-llm_0826161338.json
+python analyze_results.py results/tool-calling-gemini-2.5-flash-0.0_range_0--1_user-gemini-2.5-flash-llm_0826161338_concurrency-1.json
 ```
 
 ### Sample Output:
 ```
-📊 Analyzing results from: results/tool-calling-gemini-2.5-flash-0.0_range_0--1_user-gemini-2.5-flash-llm_0826161338.json
+📊 Analyzing results from: results/tool-calling-gemini-2.5-flash-0.0_range_0--1_user-gemini-2.5-flash-llm_0826161338_concurrency-1.json
 📝 Total entries: 115
 🔄 Number of trials: 1
 🏆 Average reward: 0.5043 (50.43% pass rate)
@@ -228,7 +252,7 @@ python run.py --agent-strategy tool-calling --env retail --model gemini-1.5-flas
 
 Then analyze:
 ```bash
-python analyze_results.py results/tool-calling-gemini-1.5-flash-0.0_range_0--3_user-gemini-2.5-flash-llm_TIMESTAMP.json
+python analyze_results.py results/tool-calling-gemini-1.5-flash-0.0_range_0--3_user-gemini-2.5-flash-llm_concurrency-1_TIMESTAMP.json
 ```
 
 This will show Pass@1, Pass@2, and Pass@3 metrics.
@@ -254,41 +278,64 @@ We've added comprehensive support for Google's Gemma models as agent models, wit
 ```bash
 python run.py --agent-strategy tool-calling --env retail \
   --model gemma3:12b --model-provider gemma \
-  --user-model gemini-2.5-flash --user-model-provider vertex_ai \
+  --user-model gemini-2.5-pro --user-model-provider vertex_ai \
   --user-strategy llm --max-concurrency 3 --end-index 115
 ```
 
-
-
-### Deployment Options
-
-#### 1. HuggingFace (Hosted)
+### Run a Specific Task (for debugging):
 ```bash
-export HUGGINGFACE_API_KEY=your_hf_token_here
+# Run just task 0 for debugging
 python run.py --agent-strategy tool-calling --env retail \
-  --model gemma-2-9b-it --model-provider gemma \
-  --user-model gemini-2.5-flash --user-model-provider vertex_ai \
-  --user-strategy llm --max-concurrency 1
+  --model gemma3:12b --model-provider gemma \
+  --user-model gemini-2.5-pro --user-model-provider vertex_ai \
+  --user-strategy llm --task-id 0
+
+# Run task 5 for debugging
+python run.py --agent-strategy tool-calling --env retail \
+  --model gemma3:12b --model-provider gemma \
+  --user-model gemini-2.5-pro --user-model-provider vertex_ai \
+  --user-strategy llm --task-id 5
+
+# Alternative: Run multiple specific tasks
+python run.py --agent-strategy tool-calling --env retail \
+  --model gemma3:12b --model-provider gemma \
+  --user-model gemini-2.5-pro --user-model-provider vertex_ai \
+  --user-strategy llm --task-ids 0 5 10
 ```
 
-#### 2. Ollama (Local)
+## 🐛 Debugging Features
+
+### Single Task Execution
+The `--task-id` flag is perfect for debugging specific tasks:
+
+```bash
+# Debug task 0 with detailed output
+python run.py --agent-strategy tool-calling --env retail \
+  --model gemma3:12b --model-provider gemma \
+  --user-model gemini-2.5-pro --user-model-provider vertex_ai \
+  --user-strategy llm --task-id 0
+```
+
+### Other Useful Debugging Flags
+```bash
+# Run with single concurrency for cleaner output
+--max-concurrency 1
+
+# Run specific task range
+--start-index 5 --end-index 10
+
+# Run multiple specific tasks
+--task-ids 0 2 5 8
+
+# Add custom suffix to output files
+--custom-suffix "_debug_run"
+```
+
+#### . Ollama (Local)
 ```bash
 # Install and pull models
 ollama pull gemma:7b
 ollama pull gemma3:12b
-
-# Run benchmark with Gemma 7B
-python run.py --agent-strategy tool-calling --env retail \
-  --model gemma:7b --model-provider gemma \
-  --user-model gemini-2.5-flash --user-model-provider vertex_ai \
-  --user-strategy llm --max-concurrency 3 --end-index 115
-
-# Run benchmark with Gemma3 12B (latest, higher capability)
-python run.py --agent-strategy tool-calling --env retail \
-  --model gemma3:12b --model-provider gemma \
-  --user-model gemini-2.5-flash --user-model-provider vertex_ai \
-  --user-strategy llm --max-concurrency 3 --end-index 115
-```
 
 #### 3. vLLM (Multi-GPU)
 ```bash
@@ -301,32 +348,3 @@ python run.py --agent-strategy tool-calling --env retail \
   --user-model gemini-2.5-flash --user-model-provider vertex_ai \
   --user-strategy llm --max-concurrency 1
 ```
-
-#### 4. Custom Fine-tuned Model (Future)
-```bash
-# For your future fine-tuned models
-python run.py --agent-strategy tool-calling --env retail \
-  --model /path/to/your/fine-tuned-gemma --model-provider gemma --base-url http://your-server:8000/v1 \
-  --user-model gemini-2.5-flash --user-model-provider vertex_ai \
-  --user-strategy llm --max-concurrency 1
-```
-
-### Testing Available Models
-Use the provided test script to check what's available in your environment:
-
-```bash
-python test_gemma_integration.py
-```
-
-This will test:
-- HuggingFace API access
-- Local Ollama models  
-- Integration functionality
-- Generate usage examples
-
-### Implementation Features
-- ✅ **Multi-provider support**: HuggingFace, Ollama, vLLM, custom endpoints
-- ✅ **Future-ready**: Easy switching to fine-tuned models via model path/URL
-- ✅ **Error handling**: Graceful fallbacks and clear error messages
-- ✅ **Flexible deployment**: Works with local, hosted, and custom setups
-- ✅ **Latest models**: Includes Gemma3 12B with enhanced performance
