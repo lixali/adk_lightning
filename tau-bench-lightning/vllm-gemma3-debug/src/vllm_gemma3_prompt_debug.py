@@ -127,8 +127,11 @@ def agent_factory(tools_info, wiki, config):
         temperature=0.0
     )
 
-# Checkpoint path setup
-ckpt_path = f"vllm_gemma3_debug_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+# Checkpoint path setup - save to log/ directory
+import os
+log_dir = os.path.join(os.path.dirname(__file__), "log")
+os.makedirs(log_dir, exist_ok=True)
+ckpt_path = os.path.join(log_dir, f"vllm_gemma3_debug_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
 
 # Start timing
 start_time = time.time()

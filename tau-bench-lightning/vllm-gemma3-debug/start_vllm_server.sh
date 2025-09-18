@@ -36,15 +36,17 @@ except Exception as e:
     print('no flash_attn (expected):', type(e).__name__, e)
 PY
 
-CUDA_VISIBLE_DEVICES=1 $ENV_PY -m vllm.entrypoints.openai.api_server \
+CUDA_VISIBLE_DEVICES=1,2 PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True $ENV_PY -m vllm.entrypoints.openai.api_server \
     --model $MODEL_NAME \
     --port $PORT \
     --host 0.0.0.0 \
     --served-model-name gemma3:12b \
     --trust-remote-code \
-    --gpu-memory-utilization 0.85 \
-    --max-model-len 4096 \
-    --tensor-parallel-size 1 \
+    --gpu-memory-utilization 0.6 \
+    --max-model-len 128000 \
+    --tensor-parallel-size 2 \
     --enforce-eager \
-    --disable-custom-all-reduce
+    --disable-custom-all-reduce \
+    --enable-prefix-caching \
+    --max-num-seqs 1
 
