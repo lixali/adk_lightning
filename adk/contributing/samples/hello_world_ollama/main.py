@@ -61,12 +61,12 @@ async def main():
   start_time = time.time()
   print('Start time:', start_time)
   print('------------------------------------')
-  await run_prompt(session_11, 'Hi, introduce yourself.')
-  await run_prompt(
-      session_11, 'Roll a die with 100 sides and check if it is prime'
-  )
-  await run_prompt(session_11, 'Roll it again.')
-  await run_prompt(session_11, 'What numbers did I get?')
+  # await run_prompt(session_11, 'Hi, introduce yourself.')
+  # await run_prompt(
+  #     session_11, 'Roll a die with 100 sides and check if it is prime'
+  # )
+  # await run_prompt(session_11, 'Roll it again.')
+  # await run_prompt(session_11, 'What numbers did I get?')
   end_time = time.time()
   print('------------------------------------')
   print('End time:', end_time)
